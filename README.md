@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SparkNC
 
 SparkNC is a premium cross-platform productivity and communication platform built for students, ambassadors, lab leaders, administrators, and board members.
@@ -61,3 +62,6 @@ Create a calm, modern, and high-trust experience that feels premium rather than 
 - Add Better Auth flows and protected routes
 - Introduce a polished design system and reusable screen patterns
 - Add D1-backed data models for tasks, goals, and messages
+=======
+# SparkNC-App
+>>>>>>> 0483827a48e81a43a514fcfcc61f70fb8e7f6834
