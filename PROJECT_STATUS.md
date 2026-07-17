@@ -25,3 +25,5 @@ Permanent documentation has been established under `docs/` and the top-level ent
 - Connect the Worker to real D1 bindings and Better Auth environment values in a deployed environment
 - Add protected route authorization based on the role/permission model
 - Introduce more polished UI components and screen patterns
+- Finalize standards-based password hashing (no new dependencies allowed unless runtime provides it)
+

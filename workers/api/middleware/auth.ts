@@ -1,11 +1,33 @@
 import { parseCookieHeader, getSessionCookieName } from '../services/authService';
 import { AuthContext } from './types';
+import { AuthService } from '../services/authService';
+import { SessionsRepository } from '../repositories/SessionsRepository';
 
-export function createAuthContext(_headers: Headers): AuthContext {
-  // Middleware authentication will be completed once the request->context pipeline
-  // provides DB access for session validation.
-  // For now, do not authenticate requests here.
-  return { isAuthenticated: false };
+export async function createAuthContext(
+  headers: Headers,
+  db: {
+    prepare: (query: string) => {
+      bind: (...values: unknown[]) => {
+        run: () => Promise<unknown>;
+        all: () => Promise<{ results: Record<string, unknown>[] }>;
+      };
+    };
+  },
+): Promise<AuthContext> {
+  const cookieHeader = headers.get('Cookie');
+  const cookies = parseCookieHeader(cookieHeader);
+  const sessionId = cookies[getSessionCookieName()];
+
+  // Reuse AuthService session validation so auth rules remain centralized.
+  const service = new AuthService(db);
+  const user = await service.validateSession(sessionId);
+
+  if (!user) return { isAuthenticated: false };
+
+  return {
+    isAuthenticated: true,
+    userId: user.userId,
+  };
 }
 
 
@@ -16,5 +38,7 @@ export function requireAuth(): { ok: false; status: 401; message: string } {
     message: 'Unauthorized',
   };
 }
+
+
 
 

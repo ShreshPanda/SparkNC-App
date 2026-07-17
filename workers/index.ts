@@ -3,6 +3,7 @@ import { createApiRouter, matchRoute } from './api/services/router';
 import { createBetterAuthService } from './auth/betterAuth';
 import { createAuthContext } from './api/middleware/auth';
 
+
 export interface Env {
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
@@ -57,18 +58,43 @@ export default {
       }
     }
 
-    const authContext = createAuthContext(request.headers);
-    const response = await match.route.handler(match.params, input, {
+    const authContext = await createAuthContext(request.headers, env.DB as any);
+    const responsePayload = await (match.route.handler as any)(match.params, input, {
       env,
       userId: authContext.userId,
+      headers: request.headers,
+      request,
     });
 
 
-    return Response.json({
+    // If controllers return a setCookie value, propagate it as a Set-Cookie header
+    // while preserving the existing response envelope.
+    const setCookie = (responsePayload && typeof responsePayload === 'object' && 'setCookie' in responsePayload
+      ? (responsePayload as any).setCookie
+      : undefined) as string | undefined;
+
+    const responseWithoutSetCookie =
+      setCookie && responsePayload && typeof responsePayload === 'object'
+        ? (({ setCookie: _ignored, ...rest }) => rest)(responsePayload as any)
+        : responsePayload;
+
+    const envelope = {
       ok: true,
-      response,
+      response: responseWithoutSetCookie,
       route: match.route.path,
       authConfigured: auth.isConfigured,
+    };
+
+    const headers = new Headers();
+    if (setCookie) headers.set('Set-Cookie', setCookie);
+
+    return new Response(JSON.stringify(envelope), {
+      status: 200,
+      headers: {
+        ...Object.fromEntries(headers.entries()),
+        'content-type': 'application/json',
+      },
     });
   },
 };
+
