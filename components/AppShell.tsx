@@ -8,7 +8,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}> 
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         <View style={styles.links}>
@@ -17,9 +17,9 @@ export function AppShell({ title, children }: { title: string; children: React.R
               <Text style={{ color: colors.accent }}>Dashboard</Text>
             </Pressable>
           </Link>
-          <Link href="/(tabs)/settings" asChild>
+          <Link href="/(tabs)/profile" asChild>
             <Pressable>
-              <Text style={{ color: colors.accent }}>Settings</Text>
+              <Text style={{ color: colors.accent }}>Profile</Text>
             </Pressable>
           </Link>
         </View>

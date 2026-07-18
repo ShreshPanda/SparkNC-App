@@ -1,0 +1,54 @@
+{
+  // SparkNC Cloudflare Worker configuration.
+  // Copy this file as the source of truth for Wrangler. No secrets belong here.
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Worker identifier. This becomes the default hostname:
+  // <name>.<subdomain>.workers.dev
+  "name": "sparknc-api",
+
+  // Worker entrypoint compiled by Wrangler.
+  "main": "workers/index.ts",
+
+  // Compatibility date must be set to a known Workers release.
+  "compatibility_date": "2025-07-18",
+
+  // Enable Node.js APIs used by the project (crypto, etc.).
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Preserve existing vars when adding/removing them.
+  "keep_vars": true,
+
+  // Minify the Worker bundle for production.
+  "minify": true,
+
+  // Non-secret environment variables. Secrets (SESSION_SECRET, BETTER_AUTH_SECRET)
+  // must be configured with `wrangler secret put` or in the Cloudflare dashboard.
+  "vars": {
+    "ENVIRONMENT": "production",
+    "COOKIE_SAMESITE": "Strict",
+    "COOKIE_SECURE": "true"
+  },
+
+  // D1 database binding. The `binding` name is referenced in code as `env.DB`.
+  // Replace <YOUR_D1_DATABASE_NAME> and <YOUR_D1_DATABASE_ID> with the values
+  // from the Cloudflare dashboard after creating the database.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "<YOUR_D1_DATABASE_NAME>",
+      "database_id": "<YOUR_D1_DATABASE_ID>"
+    }
+  ],
+
+  // Migrations are applied with `wrangler d1 migrations apply <DB_NAME>`.
+  "migrations_dir": "workers/database/migrations"
+
+  // Optional: add KV or R2 bindings here if they are needed later.
+  // "kv_namespaces": [
+  //   { "binding": "CACHE", "id": "<YOUR_KV_NAMESPACE_ID>" }
+  // ],
+  // "r2_buckets": [
+  //   { "binding": "ASSETS", "bucket_name": "<YOUR_R2_BUCKET_NAME>" }
+  // ]
+}

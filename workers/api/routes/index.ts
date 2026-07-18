@@ -1,9 +1,25 @@
 import { createActivityRoutes } from './activity';
 import { createAdminRoutes } from './admin';
+import { createAnnouncementRoutes } from './announcements';
 import { createAuthRoutes } from './auth';
 import { createEventRoutes } from './events';
 import { createGoalRoutes } from './goals';
+import { createAchievementsRoutes } from './achievements';
+import { createAIRoutes } from './ai';
+import { createAnalyticsRoutes } from './analytics';
+import { createAmbassadorRoutes } from './ambassador';
+import { createAmbassadorFeedbackRoutes } from './ambassadorFeedback';
+import { createAuditRoutes } from './audit';
+import { createDemoRoutes } from './demo';
+import { createFeedbackAnalysisRoutes } from './feedbackAnalysis';
+import { createFeatureRequestRoutes } from './featureRequests';
+import { createGrowthRoutes } from './growth';
+import { createImpactAnalyticsRoutes } from './impactAnalytics';
+import { createImpactReportRoutes } from './impactReports';
+import { createImprovementRecommendationRoutes } from './improvementRecommendations';
+import { createInsightsRoutes } from './insights';
 import { createMessageRoutes } from './messages';
+import { createNotificationRoutes } from './notifications';
 import { createTaskRoutes } from './tasks';
 import { createUserRoutes } from './users';
 
@@ -14,7 +30,23 @@ export const routeRegistry = {
   goals: ['/goals', '/goals/:id'],
   messages: ['/messages'],
   events: ['/events'],
+  announcements: ['/announcements'],
+  notifications: ['/notifications'],
+  insights: ['/insights', '/insights/dashboard', '/insights/generate'],
+  growth: ['/growth-timeline', '/growth-timeline/generate'],
+  achievements: ['/achievements', '/achievements/check'],
+  ai: ['/ai/chat'],
+  analytics: ['/analytics/overview', '/analytics/school/:id', '/analytics/snapshot/organization', '/analytics/snapshot/school/:id'],
+  ambassador: ['/ambassador/dashboard'],
+  audit: ['/audit'],
   activity: ['/activity/session', '/activity/stats'],
+  feedback: ['/feedback', '/feedback/analyze', '/feedback/insights'],
+  'ambassador-feedback': ['/ambassador/feedback'],
+  'feature-requests': ['/feature-requests', '/feature-requests/:id/vote', '/feature-requests/:id/status'],
+  'impact-analytics': ['/impact-analytics'],
+  'impact-reports': ['/impact-reports', '/impact-reports/generate'],
+  recommendations: ['/recommendations', '/recommendations/generate', '/recommendations/:id/status'],
+  demo: ['/demo'],
   admin: ['/admin/users', '/admin/events', '/admin/announcements'],
   modules: [
     ...createAuthRoutes(),
@@ -23,6 +55,23 @@ export const routeRegistry = {
     ...createGoalRoutes(),
     ...createEventRoutes(),
     ...createMessageRoutes(),
+    ...createAnnouncementRoutes(),
+    ...createNotificationRoutes(),
+    ...createInsightsRoutes(),
+    ...createGrowthRoutes(),
+    ...createAchievementsRoutes(),
+    ...createAIRoutes(),
+    ...createAnalyticsRoutes(),
+    ...createAmbassadorRoutes(),
+    ...createAuditRoutes(),
+    ...createCommunityRoutes(),
+    ...createFeedbackAnalysisRoutes(),
+    ...createAmbassadorFeedbackRoutes(),
+    ...createFeatureRequestRoutes(),
+    ...createImpactAnalyticsRoutes(),
+    ...createImpactReportRoutes(),
+    ...createImprovementRecommendationRoutes(),
+    ...createDemoRoutes(),
     ...createActivityRoutes(),
     ...createAdminRoutes(),
   ],

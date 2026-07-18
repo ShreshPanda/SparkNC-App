@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_seen_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
+  password_hash TEXT,
+  password_salt TEXT,
   FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE SET NULL
 );
 

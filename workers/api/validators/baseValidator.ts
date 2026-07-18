@@ -10,3 +10,13 @@ export function assertValidEmail(value: string): void {
     throw new Error('Invalid email address');
   }
 }
+
+export function assertLength(value: string | undefined, field: string, min: number, max: number): void {
+  if (!value) return;
+  if (value.length < min) {
+    throw new Error(`${field} must be at least ${min} characters`);
+  }
+  if (value.length > max) {
+    throw new Error(`${field} must be at most ${max} characters`);
+  }
+}

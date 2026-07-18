@@ -1,24 +1,51 @@
-export type SparkRole = 'student' | 'ambassador' | 'lab_leader' | 'location_manager' | 'board_member' | 'admin';
+import { RoleRepository } from '../repositories/RoleRepository';
+import { RoleService, type SparkRole, type SparkPermission } from './roleService';
 
-export type SparkPermission = 'read' | 'write' | 'manage' | 'admin';
+export type { SparkRole, SparkPermission };
 
-const rolePermissions: Record<SparkRole, SparkPermission[]> = {
-  student: ['read', 'write'],
-  ambassador: ['read', 'write', 'manage'],
-  lab_leader: ['read', 'write', 'manage'],
-  location_manager: ['read', 'write', 'manage'],
-  board_member: ['read', 'write', 'manage'],
-  admin: ['read', 'write', 'manage', 'admin'],
-};
+export class PermissionService {
+  constructor(private readonly roleService: RoleService) {}
 
-export function getPermissionsForRole(role: SparkRole): SparkPermission[] {
-  return rolePermissions[role] ?? rolePermissions.student;
+  async getPermissions(role: SparkRole): Promise<SparkPermission[]> {
+    return this.roleService.getPermissions(role);
+  }
+
+  async hasPermission(role: SparkRole, permission: SparkPermission): Promise<boolean> {
+    const permissions = await this.getPermissions(role);
+    return matchesPermission(permission, permissions);
+  }
 }
 
-export function canAccess(role: SparkRole, permission: SparkPermission): boolean {
-  return getPermissionsForRole(role).includes(permission);
+export function createPermissionService(db: {
+  prepare: (query: string) => {
+    bind: (...values: unknown[]) => {
+      run: () => Promise<unknown>;
+      all: () => Promise<{ results: Record<string, unknown>[] }>;
+    };
+  };
+}): PermissionService {
+  return new PermissionService(new RoleService(new RoleRepository(db)));
 }
 
-export function canManageUsers(role: SparkRole): boolean {
-  return canAccess(role, 'admin') || canAccess(role, 'manage');
+function matchesPermission(requested: SparkPermission, allowed: SparkPermission[]): boolean {
+  if (allowed.includes('*')) return true;
+
+  const requestedParts = requested.split('.');
+  for (const allowedPermission of allowed) {
+    if (allowedPermission === requested) return true;
+
+    const allowedParts = allowedPermission.split('.');
+    if (allowedParts.length > requestedParts.length) continue;
+
+    let match = true;
+    for (let i = 0; i < allowedParts.length; i += 1) {
+      if (allowedParts[i] !== '*' && allowedParts[i] !== requestedParts[i]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+
+  return false;
 }

@@ -1,4 +1,6 @@
 import { AuthService, buildClearedSessionCookie, buildSessionCookie, getSessionCookieName, parseCookieHeader } from '../services/authService';
+import { XPService } from '../services/xpService';
+import { StreakService } from '../services/streakService';
 import { assertNonEmpty } from '../validators/baseValidator';
 
 export interface RegisterInput {
@@ -101,6 +103,13 @@ export async function meController(_input: unknown, context?: { env?: unknown; h
     return Response.json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
 
+  const xpService = new XPService(db);
+  const streakService = new StreakService(db);
+  const [xpTotal, streak] = await Promise.all([
+    xpService.getUserXp(user.userId),
+    streakService.getStreak(user.userId),
+  ]);
+
   return {
     ok: true,
     data: {
@@ -108,6 +117,8 @@ export async function meController(_input: unknown, context?: { env?: unknown; h
       email: user.email,
       name: user.name,
       role: user.role,
+      xp: xpTotal,
+      streak,
     },
   };
 }

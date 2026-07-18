@@ -27,6 +27,10 @@ export async function createAuthContext(
   return {
     isAuthenticated: true,
     userId: user.userId,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    schoolId: user.schoolId,
   };
 }
 

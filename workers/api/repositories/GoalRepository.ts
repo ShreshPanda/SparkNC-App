@@ -43,6 +43,19 @@ export class GoalRepository extends BaseRepository {
     }
   }
 
+  async getGoal(goalId: string, userId: string): Promise<GoalRecord | null> {
+    try {
+      const result = await this.db
+        .prepare('SELECT id, user_id, title, description, progress, completed, xp_reward, created_at, updated_at FROM goals WHERE id = ? AND user_id = ?')
+        .bind(goalId, userId)
+        .all();
+      const row = result.results?.[0];
+      return row ? this.mapRow(row) : null;
+    } catch (error) {
+      throw new Error(`Failed to get goal: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
   async createGoal(input: CreateGoalInput, userId: string): Promise<GoalRecord> {
     const now = this.now();
     const goalId = this.createId('goal');
@@ -74,14 +87,25 @@ export class GoalRepository extends BaseRepository {
 
   async updateGoal(goalId: string, input: UpdateGoalInput, userId: string): Promise<GoalRecord | null> {
     const now = this.now();
-    const completed = input.completed ?? false;
-    const progress = input.progress ?? 0;
-    const xpReward = input.xpReward ?? 0;
+    const fields: { column: string; value: unknown }[] = [];
+
+    if (input.title !== undefined) fields.push({ column: 'title', value: input.title });
+    if (input.description !== undefined) fields.push({ column: 'description', value: input.description ?? null });
+    if (input.progress !== undefined) fields.push({ column: 'progress', value: input.progress });
+    if (input.completed !== undefined) fields.push({ column: 'completed', value: input.completed ? 1 : 0 });
+    if (input.xpReward !== undefined) fields.push({ column: 'xp_reward', value: input.xpReward });
+
+    if (fields.length === 0) {
+      return this.getGoal(goalId, userId);
+    }
+
+    const setClause = fields.map((f) => `${f.column} = ?`).join(', ');
+    const values = fields.map((f) => f.value);
 
     try {
       await this.db
-        .prepare('UPDATE goals SET updated_at = ?, progress = ?, completed = ?, xp_reward = ?, title = ?, description = ? WHERE id = ? AND user_id = ?')
-        .bind(now, progress, completed ? 1 : 0, xpReward, input.title ?? null, input.description ?? null, goalId, userId)
+        .prepare(`UPDATE goals SET ${setClause}, updated_at = ? WHERE id = ? AND user_id = ?`)
+        .bind(...values, now, goalId, userId)
         .run();
 
       const current = await this.db.prepare('SELECT id, user_id, title, description, progress, completed, xp_reward, created_at, updated_at FROM goals WHERE id = ? AND user_id = ?').bind(goalId, userId).all();
@@ -93,6 +117,15 @@ export class GoalRepository extends BaseRepository {
       return this.mapRow(row);
     } catch (error) {
       throw new Error(`Failed to update goal: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  async deleteGoal(goalId: string, userId: string): Promise<boolean> {
+    try {
+      await this.db.prepare('DELETE FROM goals WHERE id = ? AND user_id = ?').bind(goalId, userId).run();
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to delete goal: ${error instanceof Error ? error.message : 'unknown error'}`);
     }
   }
 

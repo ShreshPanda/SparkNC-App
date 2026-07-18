@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { TaskRepository, type CreateTaskInput, type UpdateTaskInput } from '../repositories/TaskRepository';
 import { assertNonEmpty } from '../validators/baseValidator';
+import { XPService } from './xpService';
+import { StreakService } from './streakService';
+import { NotificationService } from './notificationService';
 
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required'),
@@ -21,7 +24,22 @@ export const updateTaskSchema = z.object({
 });
 
 export class TaskService {
-  constructor(private readonly repository: TaskRepository) {}
+  constructor(
+    private readonly repository: TaskRepository,
+    private readonly xpService: XPService,
+    private readonly streakService: StreakService,
+    private readonly notificationService?: NotificationService,
+  ) {}
+
+  async getTask(taskId: string, userId: string) {
+    assertNonEmpty(taskId, 'Task id is required');
+    assertNonEmpty(userId, 'User id is required');
+    const task = await this.repository.getTask(taskId, userId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    return { ok: true, item: task };
+  }
 
   async listTasks(userId: string) {
     assertNonEmpty(userId, 'User id is required');
@@ -42,12 +60,19 @@ export class TaskService {
 
     const task = await this.repository.createTask(payload, userId);
 
+    let xpAwarded = 0;
+    let streak = { current: 0, longest: 0, updated: false };
+    if (task.completed) {
+      xpAwarded = await this.xpService.awardTaskCompletion(userId, task.xpReward);
+      streak = await this.streakService.recordActivity(userId);
+    }
+
     return {
       ok: true,
       item: task,
       message: 'Task created successfully',
-      xpPrepared: task.completed ? task.xpReward : 0,
-      streakPrepared: false,
+      xpAwarded,
+      streak,
     };
   }
 
@@ -74,8 +99,46 @@ export class TaskService {
       ok: true,
       item: task,
       message: 'Task updated successfully',
-      xpPrepared: task.completed ? task.xpReward : 0,
-      streakPrepared: false,
+    };
+  }
+
+  async completeTask(taskId: string, userId: string) {
+    assertNonEmpty(taskId, 'Task id is required');
+    assertNonEmpty(userId, 'User id is required');
+
+    const task = await this.repository.getTask(taskId, userId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    if (task.completed) {
+      throw new Error('Task already completed');
+    }
+
+    const updated = await this.repository.updateTask(taskId, { completed: true }, userId);
+    if (!updated) {
+      throw new Error('Task not found');
+    }
+
+    const xpAwarded = await this.xpService.awardTaskCompletion(userId, updated.xpReward);
+    const streak = await this.streakService.recordActivity(userId);
+
+    if (this.notificationService) {
+      await this.notificationService.createNotification({
+        userId,
+        title: 'Task completed',
+        body: `You completed "${updated.title}" and earned ${xpAwarded} XP.`,
+        kind: 'success',
+        entityType: 'task',
+        entityId: updated.id,
+      });
+    }
+
+    return {
+      ok: true,
+      item: updated,
+      message: 'Task completed successfully',
+      xpAwarded,
+      streak,
     };
   }
 

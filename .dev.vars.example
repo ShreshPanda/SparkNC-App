@@ -1,0 +1,17 @@
+# SparkNC local development secrets for `wrangler dev`.
+# Copy this file to .dev.vars and fill in real values.
+# DO NOT commit .dev.vars to version control.
+
+# Session cookie signing secret. Generate with:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+SESSION_SECRET=dev_secret_replace_with_random_32_byte_hex
+
+# Optional Better Auth compatibility placeholder (currently not used by custom session auth).
+BETTER_AUTH_SECRET=dev_better_auth_secret_replace_with_random_string
+
+# Optional Better Auth base URL for compatibility checks.
+BETTER_AUTH_URL=http://localhost:8787
+
+# Set to 'development' when running locally so cookies are not forced secure.
+ENVIRONMENT=development
+COOKIE_SECURE=false

@@ -8,18 +8,72 @@ import { assertNonEmpty, assertValidEmail } from '../validators/baseValidator';
 const SESSION_COOKIE_NAME = 'sparknc_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
+const PBKDF2_ITERATIONS = 100_000;
+const SALT_BYTES = 16;
+const KEY_BITS = 256;
+
 function toIso(ms: number): string {
   return new Date(ms).toISOString();
 }
 
-async function sha256Base64Url(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  const bytes = new Uint8Array(digest);
+function textToBuffer(text: string): ArrayBuffer {
+  return new TextEncoder().encode(text);
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = '';
   for (const b of bytes) binary += String.fromCharCode(b);
   const base64 = btoa(binary);
   return base64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+}
+
+function base64UrlToBytes(value: string): Uint8Array {
+  const base64 = value.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - (value.length % 4)) % 4);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function randomSalt(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  return bytesToBase64Url(bytes);
+}
+
+function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    result |= a[i] ^ b[i];
+  }
+  return result === 0;
+}
+
+async function deriveKey(password: string, salt: string, iterations: number): Promise<ArrayBuffer> {
+  const passwordKey = await crypto.subtle.importKey('raw', textToBuffer(password), { name: 'PBKDF2' }, false, ['deriveBits']);
+  return crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: base64UrlToBytes(salt), iterations, hash: 'SHA-256' },
+    passwordKey,
+    KEY_BITS,
+  );
+}
+
+function encodePasswordHash(hashBits: ArrayBuffer): string {
+  return `pbkdf2:${PBKDF2_ITERATIONS}:${bytesToBase64Url(new Uint8Array(hashBits))}`;
+}
+
+function parsePasswordHash(encoded: string): { iterations: number; hashBytes: Uint8Array } | null {
+  const parts = encoded.split(':');
+  if (parts.length !== 3 || parts[0] !== 'pbkdf2') return null;
+  const iterations = Number.parseInt(parts[1], 10);
+  if (Number.isNaN(iterations) || iterations <= 0) return null;
+  try {
+    return { iterations, hashBytes: base64UrlToBytes(parts[2]) };
+  } catch {
+    return null;
+  }
 }
 
 export interface UserAuthRecord {
@@ -85,11 +139,8 @@ export class AuthService {
   ) {}
 
   private async hashPassword(password: string, salt: string): Promise<string> {
-    // NOTE: Without a native password-hashing dependency in this repo,
-    // we use an SHA-256(salt + password) construction.
-    // This is a placeholder-grade scheme and must be upgraded to a real KDF
-    // (bcrypt/argon2/scrypt) once dependencies are available.
-    return sha256Base64Url(`${salt}:${password}`);
+    const bits = await deriveKey(password, salt, PBKDF2_ITERATIONS);
+    return encodePasswordHash(bits);
   }
 
   async register(input: CreateUserInput): Promise<{ userId: string; sessionId: string; expiresAt: string; role: string }> {
@@ -101,7 +152,7 @@ export class AuthService {
     const role = input.role ?? 'student';
     assertNonEmpty(role, 'Role is required');
 
-    const salt = crypto.randomUUID();
+    const salt = randomSalt();
 
     const passwordHash = await this.hashPassword(input.password, salt);
 
@@ -139,10 +190,15 @@ export class AuthService {
     }
 
     const salt = String(row.password_salt ?? '');
-    const expectedHash = String(row.password_hash ?? '');
-    const actualHash = await this.hashPassword(password, salt);
+    const encodedHash = String(row.password_hash ?? '');
 
-    if (!actualHash || actualHash !== expectedHash) {
+    const parsed = parsePasswordHash(encodedHash);
+    if (!parsed) {
+      throw new Error('Invalid credentials');
+    }
+
+    const actualBits = await deriveKey(password, salt, parsed.iterations);
+    if (!timingSafeEqual(new Uint8Array(actualBits), parsed.hashBytes)) {
       throw new Error('Invalid credentials');
     }
 
@@ -159,7 +215,7 @@ export class AuthService {
     await sessionsRepo.revokeSession(sessionId);
   }
 
-  async validateSession(sessionId: string | undefined): Promise<{ userId: string; role: string; email: string; name: string } | null> {
+  async validateSession(sessionId: string | undefined): Promise<{ userId: string; role: string; email: string; name: string; schoolId?: string } | null> {
     if (!sessionId) return null;
 
     const sessionsRepo = new SessionsRepository(this.db);
@@ -173,7 +229,7 @@ export class AuthService {
     if (Number.isNaN(exp) || exp < now) return null;
 
     const user = await this.db
-      .prepare('SELECT id, email, name, role FROM users WHERE id = ? LIMIT 1')
+      .prepare('SELECT id, email, name, role, school_id FROM users WHERE id = ? LIMIT 1')
       .bind(session.userId)
       .all();
 
@@ -185,21 +241,21 @@ export class AuthService {
       email: String(row.email ?? ''),
       name: String(row.name ?? ''),
       role: String(row.role ?? 'student'),
+      schoolId: row.school_id == null ? undefined : String(row.school_id),
     };
   }
 }
 
 export function buildSessionCookie(sessionId: string, expiresAt: string, requestSecure: boolean): string {
-  const secure = requestSecure;
-  const httpOnly = true;
-  const sameSite = 'Strict';
-  const path = '/';
-
-  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; HttpOnly=${httpOnly ? 'true' : 'false'}; Path=${path}; SameSite=${sameSite}; Max-Age=${Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)};${secure ? ' Secure' : ''}`;
+  const maxAge = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+  const attributes = ['Path=/', 'HttpOnly', 'SameSite=Strict', `Max-Age=${maxAge}`];
+  if (requestSecure) attributes.push('Secure');
+  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; ${attributes.join('; ')}`;
 }
 
-export function buildClearedSessionCookie(): string {
-  // Clear by setting Max-Age=0
-  return `${SESSION_COOKIE_NAME}=; HttpOnly=true; Path=/; Max-Age=0; SameSite=Strict`;
+export function buildClearedSessionCookie(requestSecure = true): string {
+  const attributes = ['Path=/', 'HttpOnly', 'SameSite=Strict', 'Max-Age=0'];
+  if (requestSecure) attributes.push('Secure');
+  return `${SESSION_COOKIE_NAME}=; ${attributes.join('; ')}`;
 }
 

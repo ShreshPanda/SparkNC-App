@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { GoalRepository, type CreateGoalInput, type UpdateGoalInput } from '../repositories/GoalRepository';
 import { assertNonEmpty } from '../validators/baseValidator';
+import { XPService } from './xpService';
+import { StreakService } from './streakService';
+import { NotificationService } from './notificationService';
 
 export const createGoalSchema = z.object({
   title: z.string().min(1, 'Goal title is required'),
@@ -19,7 +22,22 @@ export const updateGoalSchema = z.object({
 });
 
 export class GoalService {
-  constructor(private readonly repository: GoalRepository) {}
+  constructor(
+    private readonly repository: GoalRepository,
+    private readonly xpService: XPService,
+    private readonly streakService: StreakService,
+    private readonly notificationService?: NotificationService,
+  ) {}
+
+  async getGoal(goalId: string, userId: string) {
+    assertNonEmpty(goalId, 'Goal id is required');
+    assertNonEmpty(userId, 'User id is required');
+    const goal = await this.repository.getGoal(goalId, userId);
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+    return { ok: true, item: goal };
+  }
 
   async listGoals(userId: string) {
     assertNonEmpty(userId, 'User id is required');
@@ -39,12 +57,19 @@ export class GoalService {
 
     const goal = await this.repository.createGoal(payload, userId);
 
+    let xpAwarded = 0;
+    let streak = { current: 0, longest: 0, updated: false };
+    if (goal.completed) {
+      xpAwarded = await this.xpService.awardGoalCompletion(userId, goal.xpReward);
+      streak = await this.streakService.recordActivity(userId);
+    }
+
     return {
       ok: true,
       item: goal,
       message: 'Goal created successfully',
-      xpPrepared: goal.completed ? goal.xpReward : 0,
-      streakPrepared: false,
+      xpAwarded,
+      streak,
     };
   }
 
@@ -70,8 +95,58 @@ export class GoalService {
       ok: true,
       item: goal,
       message: 'Goal updated successfully',
-      xpPrepared: goal.completed ? goal.xpReward : 0,
-      streakPrepared: false,
+    };
+  }
+
+  async completeGoal(goalId: string, userId: string) {
+    assertNonEmpty(goalId, 'Goal id is required');
+    assertNonEmpty(userId, 'User id is required');
+
+    const goal = await this.repository.getGoal(goalId, userId);
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+    if (goal.completed) {
+      throw new Error('Goal already completed');
+    }
+
+    const updated = await this.repository.updateGoal(goalId, { completed: true, progress: 100 }, userId);
+    if (!updated) {
+      throw new Error('Goal not found');
+    }
+
+    const xpAwarded = await this.xpService.awardGoalCompletion(userId, updated.xpReward);
+    const streak = await this.streakService.recordActivity(userId);
+
+    if (this.notificationService) {
+      await this.notificationService.createNotification({
+        userId,
+        title: 'Goal completed',
+        body: `You completed "${updated.title}" and earned ${xpAwarded} XP.`,
+        kind: 'success',
+        entityType: 'goal',
+        entityId: updated.id,
+      });
+    }
+
+    return {
+      ok: true,
+      item: updated,
+      message: 'Goal completed successfully',
+      xpAwarded,
+      streak,
+    };
+  }
+
+  async deleteGoal(goalId: string, userId: string) {
+    assertNonEmpty(goalId, 'Goal id is required');
+    assertNonEmpty(userId, 'User id is required');
+    const deleted = await this.repository.deleteGoal(goalId, userId);
+    return {
+      ok: true,
+      deleted,
+      goalId,
+      message: 'Goal deleted successfully',
     };
   }
 }

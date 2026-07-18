@@ -1,21 +1,64 @@
-import { Link } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
+import { authService } from '../../services/authService';
 import { spacing, typography } from '../../theme';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleLogin() {
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await authService.login(email.trim(), password.trim());
+      router.replace('/(tabs)/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <AppShell title="Welcome back">
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.heading, { color: colors.foreground }]}>Sign in to SparkNC</Text>
-        <Text style={[styles.body, { color: colors.muted }]}>Premium workspace for students and leaders.</Text>
-        <Link href="/(tabs)/dashboard" asChild>
-          <Pressable style={[styles.button, { backgroundColor: colors.accent }]}> 
-            <Text style={styles.buttonText}>Continue</Text>
+        {error && <Text style={[styles.error, { color: colors.highlight }]}>{error}</Text>}
+        <TextInput
+          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+          placeholder="Email"
+          placeholderTextColor={colors.muted}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+          placeholder="Password"
+          placeholderTextColor={colors.muted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Pressable style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleLogin} disabled={loading}>
+          {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Continue</Text>}
+        </Pressable>
+        <Link href="/(auth)/signup" asChild>
+          <Pressable>
+            <Text style={[styles.link, { color: colors.accent }]}>Create an account</Text>
           </Pressable>
         </Link>
       </View>
@@ -24,9 +67,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.md, padding: spacing.lg, borderRadius: 20, backgroundColor: '#ffffff' },
+  card: { gap: spacing.md, padding: spacing.lg, borderRadius: 20, borderWidth: 1 },
   heading: { ...typography.heading },
-  body: { ...typography.body },
+  error: { ...typography.body },
+  input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
   button: { paddingVertical: spacing.md, borderRadius: 999, alignItems: 'center' },
   buttonText: { color: '#ffffff', fontWeight: '700' },
+  link: { textAlign: 'center', ...typography.body },
 });
