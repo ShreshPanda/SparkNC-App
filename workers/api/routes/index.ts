@@ -5,8 +5,12 @@ import { createAuthRoutes } from './auth';
 import { createEventRoutes } from './events';
 import { createGoalRoutes } from './goals';
 import { createAchievementsRoutes } from './achievements';
+import { createAIMemoryRoutes } from './aiMemory';
 import { createAIRoutes } from './ai';
+import { createAmbassadorSupportRoutes } from './ambassadorSupport';
 import { createAnalyticsRoutes } from './analytics';
+import { createCommunityModerationRoutes } from './communityModeration';
+import { createEngagementAnalyticsRoutes } from './engagementAnalytics';
 import { createAmbassadorRoutes } from './ambassador';
 import { createAmbassadorFeedbackRoutes } from './ambassadorFeedback';
 import { createAuditRoutes } from './audit';
@@ -20,6 +24,8 @@ import { createImprovementRecommendationRoutes } from './improvementRecommendati
 import { createInsightsRoutes } from './insights';
 import { createMessageRoutes } from './messages';
 import { createNotificationRoutes } from './notifications';
+import { createOnboardingRoutes } from './onboarding';
+import { createPilotRoutes } from './pilot';
 import { createTaskRoutes } from './tasks';
 import { createUserRoutes } from './users';
 
@@ -43,6 +49,12 @@ export const routeRegistry = {
   feedback: ['/feedback', '/feedback/analyze', '/feedback/insights'],
   'ambassador-feedback': ['/ambassador/feedback'],
   'feature-requests': ['/feature-requests', '/feature-requests/:id/vote', '/feature-requests/:id/status'],
+  'pilot': ['/pilot/groups', '/pilot/participants', '/pilot/me'],
+  'onboarding': ['/onboarding', '/onboarding/complete'],
+  'ai-memory': ['/ai/memory'],
+  'engagement-analytics': ['/analytics/engagement', '/analytics/retention', '/analytics/features'],
+  'ambassador-support': ['/ambassador/student-support'],
+  'community-moderation': ['/community/reports', '/community/moderate/posts', '/community/moderate/groups'],
   'impact-analytics': ['/impact-analytics'],
   'impact-reports': ['/impact-reports', '/impact-reports/generate'],
   recommendations: ['/recommendations', '/recommendations/generate', '/recommendations/:id/status'],
@@ -62,9 +74,12 @@ export const routeRegistry = {
     ...createAchievementsRoutes(),
     ...createAIRoutes(),
     ...createAnalyticsRoutes(),
+    ...createEngagementAnalyticsRoutes(),
     ...createAmbassadorRoutes(),
+    ...createAmbassadorSupportRoutes(),
     ...createAuditRoutes(),
     ...createCommunityRoutes(),
+    ...createCommunityModerationRoutes(),
     ...createFeedbackAnalysisRoutes(),
     ...createAmbassadorFeedbackRoutes(),
     ...createFeatureRequestRoutes(),
@@ -72,6 +87,9 @@ export const routeRegistry = {
     ...createImpactReportRoutes(),
     ...createImprovementRecommendationRoutes(),
     ...createDemoRoutes(),
+    ...createAIMemoryRoutes(),
+    ...createOnboardingRoutes(),
+    ...createPilotRoutes(),
     ...createActivityRoutes(),
     ...createAdminRoutes(),
   ],

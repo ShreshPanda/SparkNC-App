@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.0] - 2026-07-26
+### Added
+- Sprint 7 Launch, Validation & Real-World Adoption features:
+  - Production Runbook: `docs/PRODUCTION_RUNBOOK.md` with deployment, migration, secret, rollback, and troubleshooting steps.
+  - Pilot System: `PilotRepository`, `PilotService`, `pilot.ts` controller/routes, `013_pilot.sql`, and `docs/PILOT_SYSTEM.md`.
+  - First-Time User Experience: `OnboardingRepository`, `OnboardingService`, `014_onboarding.sql`, `app/onboarding.tsx`, and `docs/ONBOARDING_FLOW.md`.
+  - AI Memory System: `AIMemoryRepository`, `AIMemoryService`, `015_ai_memory.sql`, `aiMemory.ts` routes, and `docs/AI_MEMORY_SYSTEM.md`.
+  - Real Push Delivery: `ExpoPushProvider` for iOS, Android, and web via Expo Push API and `docs/PUSH_NOTIFICATIONS.md`.
+  - Engagement Analytics: `EngagementAnalyticsRepository`, `EngagementAnalyticsService`, `GET /analytics/engagement|retention|features`, and `docs/ENGAGEMENT_ANALYTICS.md`.
+  - Ambassador Student Support: `StudentSupportRepository`, `StudentSupportService`, `GET/POST /ambassador/student-support`, and `docs/AMBASSADOR_OPERATIONS.md`.
+  - Community Moderation: `CommunityModerationService`, `016_moderation.sql`, `/community/reports` and `/community/moderate/*` routes, and `docs/COMMUNITY_MODERATION.md`.
+  - Performance Validation: `docs/LOAD_TESTING.md` with 100/500/1000-user load targets and optimization checklist.
+  - Leadership Demo Experience: `LeadershipDemoService` and `docs/SPARKNC_LEADERSHIP_DEMO.md`.
+
+### Changed
+- `workers/api/routes/index.ts` now registers all new Sprint 7 routes: pilot, onboarding, AI memory, engagement analytics, ambassador support, and community moderation.
+
+### Security
+- No secrets are committed to source; `EXPO_ACCESS_TOKEN` is read from Wrangler secrets.
+- Onboarding and AI memory data are user-owned, never used for classification or psychological profiling.
+
+
 ## [2.0.0] - 2026-07-25
 ### Added
 - Sprint 6 Scale, Reliability, AI features:

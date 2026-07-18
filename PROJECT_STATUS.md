@@ -84,11 +84,25 @@ Permanent documentation has been established under `docs/` and the top-level ent
 - Leadership Package with updated proposal and `docs/SPARKNC_DEMO_SCRIPT.md`.
 - All top-level docs (`CHANGELOG.md`, `PROJECT_STATUS.md`, `docs/SPRINT_STATE.md`, `NEXT_TASK.md`) updated.
 
+## Recently completed (Sprint 7)
+- Production deployment runbook (`docs/PRODUCTION_RUNBOOK.md`).
+- Pilot management system (`013_pilot.sql`, `PilotRepository`, `PilotService`, `/pilot/*` routes).
+- First-time onboarding (`014_onboarding.sql`, `OnboardingService`, `app/onboarding.tsx`).
+- AI memory system (`015_ai_memory.sql`, `AIMemoryRepository`, `AIMemoryService`, `/ai/memory` routes).
+- Real push delivery via `ExpoPushProvider` and `docs/PUSH_NOTIFICATIONS.md`.
+- Engagement analytics endpoints (`/analytics/engagement`, `/analytics/retention`, `/analytics/features`).
+- Ambassador student support queue (`/ambassador/student-support`).
+- Community moderation (`016_moderation.sql`, `/community/reports`, `/community/moderate/*`).
+- Load testing guide (`docs/LOAD_TESTING.md`).
+- Leadership demo service and demo guide (`docs/SPARKNC_LEADERSHIP_DEMO.md`).
+- All new routes registered and top-level docs updated.
+
 ## Remaining work
 - Run `npm install` and typecheck both Worker and Expo projects.
-- Apply all pending D1 migrations through `012_performance_indexes.sql` and smoke-test new endpoints with `wrangler dev`.
-- Add community permissions to the `roles` table and verify `community` routes.
-- Implement real push providers for iOS, Android, and web behind the `NotificationProvider` interface.
-- Expand Vitest unit tests to cover tasks, goals, notifications, AI, analytics, and repositories.
+- Apply all D1 migrations through `016_moderation.sql` and smoke-test new endpoints with `wrangler dev`.
+- Seed `pilot.*`, `community.moderate.*`, and `ambassador.support.*` permissions into the `roles` table.
+- Configure `EXPO_ACCESS_TOKEN` and wire `PushNotificationService` into notification scheduling.
+- Expand Vitest unit tests to cover new repositories and services.
+- Run the `docs/LOAD_TESTING.md` 100/500/1000-user validation against a staging Worker.
 - Build and deploy the Expo app with `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` set to production.
-- Conduct the end-to-end leadership demo using `docs/SPARKNC_DEMO_SCRIPT.md`.
+- Conduct the end-to-end leadership demo using `docs/SPARKNC_LEADERSHIP_DEMO.md`.
