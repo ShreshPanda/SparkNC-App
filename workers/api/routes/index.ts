@@ -14,9 +14,16 @@ import { createEngagementAnalyticsRoutes } from './engagementAnalytics';
 import { createAmbassadorRoutes } from './ambassador';
 import { createAmbassadorFeedbackRoutes } from './ambassadorFeedback';
 import { createAuditRoutes } from './audit';
+import { createDelightRoutes } from './delight';
 import { createDemoRoutes } from './demo';
+import { createExecutiveRoutes } from './executive';
 import { createFeedbackAnalysisRoutes } from './feedbackAnalysis';
 import { createFeatureRequestRoutes } from './featureRequests';
+import { createJourneyRoutes } from './journey';
+import { createMetricsRoutes } from './metrics';
+import { createPilotOperationsRoutes } from './pilotOperations';
+import { createPortfolioRoutes } from './portfolio';
+import { createSparkMomentsRoutes } from './sparkMoments';
 import { createGrowthRoutes } from './growth';
 import { createImpactAnalyticsRoutes } from './impactAnalytics';
 import { createImpactReportRoutes } from './impactReports';
@@ -49,6 +56,13 @@ export const routeRegistry = {
   feedback: ['/feedback', '/feedback/analyze', '/feedback/insights'],
   'ambassador-feedback': ['/ambassador/feedback'],
   'feature-requests': ['/feature-requests', '/feature-requests/:id/vote', '/feature-requests/:id/status'],
+  'journey': ['/journey'],
+  'portfolio': ['/portfolio'],
+  'executive-dashboard': ['/executive/dashboard'],
+  'delight': ['/delight'],
+  'metrics': ['/metrics'],
+  'pilot-operations': ['/pilot/operations'],
+  'spark-moments': ['/spark-moments', '/spark-moments/trigger'],
   'pilot': ['/pilot/groups', '/pilot/participants', '/pilot/me'],
   'onboarding': ['/onboarding', '/onboarding/complete'],
   'ai-memory': ['/ai/memory'],
@@ -83,6 +97,13 @@ export const routeRegistry = {
     ...createFeedbackAnalysisRoutes(),
     ...createAmbassadorFeedbackRoutes(),
     ...createFeatureRequestRoutes(),
+    ...createJourneyRoutes(),
+    ...createPortfolioRoutes(),
+    ...createExecutiveRoutes(),
+    ...createDelightRoutes(),
+    ...createMetricsRoutes(),
+    ...createPilotOperationsRoutes(),
+    ...createSparkMomentsRoutes(),
     ...createImpactAnalyticsRoutes(),
     ...createImpactReportRoutes(),
     ...createImprovementRecommendationRoutes(),

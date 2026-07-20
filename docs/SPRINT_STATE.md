@@ -673,3 +673,74 @@ Transform SparkNC from a powerful internal platform into a production-quality ec
 - Execute `docs/LOAD_TESTING.md` 100/500/1000-user validation in staging.
 - Build, deploy, and conduct the leadership demo.
 
+## Sprint 8 — Experience, Delight & Product Excellence
+
+### Completed 2026-07-27
+- **Phase 1 — Premium UI/UX polish**: Updated `docs/DESIGN_SYSTEM.md`, `docs/COMPONENT_LIBRARY.md`, and `docs/UX_PRINCIPLES.md` with polish, motion, and accessibility guidelines.
+- **Phase 2 — Premium motion system**: `app/lib/motion.ts` animation presets and `app/providers/AnimationProvider.tsx` with reduced-motion support.
+- **Phase 3 — Beautiful growth dashboard**: New widgets `ProgressRing`, `StatsWidget`, `HeatmapWidget`, `AchievementCarousel`, and `GrowthDashboard`.
+- **Phase 4 — Spark Journey**: `JourneyRepository`, `SparkJourneyService`, `GET /journey`, `app/(tabs)/journey.tsx`, `docs/SPARK_JOURNEY.md`.
+- **Phase 5 — Student portfolio**: `PortfolioRepository`, `PortfolioService`, `GET /portfolio`, `app/(tabs)/portfolio.tsx`, `docs/PORTFOLIO_SYSTEM.md`.
+- **Phase 6 — Executive Dashboard 2.0**: `ExecutiveDashboardService`, `GET /executive/dashboard`, `docs/EXECUTIVE_DASHBOARD.md`.
+- **Phase 7 — AI experience refinement**: `AIExperienceService` for memory-aware weekly/monthly/semester summaries and opportunities.
+- **Phase 8 — Student delight**: `DelightService`, `CelebrationOverlay`, and `delight_events` tracking.
+- **Phase 9 — Ambassador & leadership polish**: `AmbassadorLeadershipPolishService` with quick actions and summaries.
+- **Phase 10 — Final product review**: `docs/PRODUCT_REVIEW.md` covering architecture, performance, accessibility, security, and consistency.
+- **Route & tab registration**: `workers/api/routes/index.ts` and `app/(tabs)/_layout.tsx` updated for `/journey`, `/portfolio`, `/executive/dashboard`, `/delight`, and the new tabs.
+- **Migration**: `017_experience_and_delight.sql` for `journey_events`, `portfolio`, and `delight_events`.
+- **Top-level docs**: `CHANGELOG.md`, `PROJECT_STATUS.md`, `NEXT_TASK.md` updated.
+
+### Artifacts
+- New migrations: `017_experience_and_delight.sql`.
+- New repositories: `JourneyRepository`, `PortfolioRepository`.
+- New services: `SparkJourneyService`, `PortfolioService`, `ExecutiveDashboardService`, `AIExperienceService`, `DelightService`, `AmbassadorLeadershipPolishService`.
+- New controllers/routes: journey, portfolio, executive, delight.
+- New frontend: `app/(tabs)/journey.tsx`, `app/(tabs)/portfolio.tsx`, `app/components/dashboard/*`, `app/components/CelebrationOverlay.tsx`, `app/lib/motion.ts`, `app/providers/AnimationProvider.tsx`.
+- New docs: `docs/SPARK_JOURNEY.md`, `docs/PORTFOLIO_SYSTEM.md`, `docs/EXECUTIVE_DASHBOARD.md`, `docs/PRODUCT_REVIEW.md`.
+
+### Post-Sprint 8 next steps
+- Run `npm install` and typecheck Worker + Expo.
+- Apply migrations `006` through `017` and run `wrangler dev` smoke tests.
+- Seed `admin.executive.view` permission and any missing role permissions.
+- Set `EXPO_ACCESS_TOKEN` and register `ExpoPushProvider` in `workers/index.ts`.
+- Wire `GrowthDashboard` into `app/(tabs)/dashboard.tsx` and connect widgets to live data.
+- Expand Vitest coverage for new repositories, services, and widgets.
+- Run `docs/LOAD_TESTING.md` 100/500/1000-user staging validation.
+- Build, deploy, and conduct the leadership demo.
+
+## Sprint 9 — Launch Candidate, Production & Pilot Readiness
+
+### Completed 2026-07-27
+- **Phase 1 — Complete deployment**: `docs/PRODUCTION_ENVIRONMENT.md`, `docs/DEPLOYMENT_VALIDATION.md`.
+- **Phase 2 — Performance optimization**: `018_sprint9_performance_indexes.sql`, `docs/PERFORMANCE_OPTIMIZATION.md`.
+- **Phase 3 — Reliability**: `RetryService.ts`, `app/lib/retry.ts`, `app/lib/requestQueue.ts`, `docs/RELIABILITY.md`.
+- **Phase 4 — Security audit**: `docs/SECURITY_AUDIT.md`, `workers/api/middleware/rateLimit.ts`, `workers/api/services/InputValidationService.ts`.
+- **Phase 5 — Complete testing**: `workers/tests/authService.test.ts`, `taskService.test.ts`, `retryService.test.ts`, `docs/TEST_REPORT.md`.
+- **Phase 6 — Observability**: `MetricsRepository.ts`, `ObservabilityService.ts`, `GET /metrics`, `019_observability.sql`, `docs/OBSERVABILITY.md`.
+- **Phase 7 — Pilot analytics**: `PilotOperationsRepository.ts`, `PilotOperationsDashboardService.ts`, `GET /pilot/operations`, `docs/PILOT_OPERATIONS_DASHBOARD.md`.
+- **Phase 8 — First-time experience**: `docs/FIRST_TIME_EXPERIENCE.md` review and recommendations.
+- **Phase 9 — Spark moments**: `SparkMomentsRepository.ts`, `SparkMomentsService.ts`, `GET/POST /spark-moments/*`, `020_spark_moments.sql`, `docs/SPARK_MOMENTS.md`.
+- **Phase 10 — Final product review**: `docs/FINAL_REVIEW.md`.
+- **Phase 11 — v1.0 release package**: `docs/VERSION_1_RELEASE_NOTES.md`, `PILOT_ADMIN_GUIDE.md`, `PILOT_STUDENT_GUIDE.md`, `PILOT_AMBASSADOR_GUIDE.md`, `LEADERSHIP_PRESENTATION.md`, `RELEASE_CHECKLIST.md`.
+- **Route & top-level docs**: `workers/api/routes/index.ts` registered metrics, pilot operations, and spark moments. `CHANGELOG.md`, `PROJECT_STATUS.md`, `NEXT_TASK.md` updated.
+
+### Artifacts
+- New migrations: `018_sprint9_performance_indexes.sql`, `019_observability.sql`, `020_spark_moments.sql`.
+- New repositories: `MetricsRepository.ts`, `PilotOperationsRepository.ts`, `SparkMomentsRepository.ts`.
+- New services: `RetryService.ts`, `ObservabilityService.ts`, `PilotOperationsDashboardService.ts`, `SparkMomentsService.ts`, `InputValidationService.ts`.
+- New middleware: `rateLimit.ts`.
+- New controllers/routes: `metrics.ts`, `pilotOperations.ts`, `sparkMoments.ts`.
+- New frontend utilities: `app/lib/retry.ts`, `app/lib/requestQueue.ts`.
+- New tests: `workers/tests/authService.test.ts`, `taskService.test.ts`, `retryService.test.ts`.
+- New docs: `PRODUCTION_ENVIRONMENT.md`, `DEPLOYMENT_VALIDATION.md`, `PERFORMANCE_OPTIMIZATION.md`, `RELIABILITY.md`, `SECURITY_AUDIT.md`, `TEST_REPORT.md`, `OBSERVABILITY.md`, `PILOT_OPERATIONS_DASHBOARD.md`, `FIRST_TIME_EXPERIENCE.md`, `SPARK_MOMENTS.md`, `FINAL_REVIEW.md`, `VERSION_1_RELEASE_NOTES.md`, `PILOT_ADMIN_GUIDE.md`, `PILOT_STUDENT_GUIDE.md`, `PILOT_AMBASSADOR_GUIDE.md`, `LEADERSHIP_PRESENTATION.md`, `RELEASE_CHECKLIST.md`.
+
+### Post-Sprint 9 next steps
+- Run `npm install` and typecheck Worker + Expo.
+- Apply all D1 migrations `001` through `020` and run `wrangler dev` smoke tests.
+- Seed `admin.executive.view`, `admin.pilot.view`, `pilot.*`, `community.moderate.*`, and `ambassador.support.*` permissions.
+- Set `EXPO_ACCESS_TOKEN` and register `ExpoPushProvider` in `workers/index.ts`.
+- Wire `GrowthDashboard` and new frontend screens to live `cloudflareService` data.
+- Expand Vitest coverage and add React Native Testing Library tests.
+- Run `docs/LOAD_TESTING.md` 100/500/1000-user staging validation.
+- Build, deploy, and conduct the leadership demo.
+

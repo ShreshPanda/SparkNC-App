@@ -97,12 +97,42 @@ Permanent documentation has been established under `docs/` and the top-level ent
 - Leadership demo service and demo guide (`docs/SPARKNC_LEADERSHIP_DEMO.md`).
 - All new routes registered and top-level docs updated.
 
+## Recently completed (Sprint 8)
+- Premium UI/UX polish: design system, component library, and UX principles updated.
+- Motion system with `app/lib/motion.ts` and `AnimationProvider` (reduced-motion aware).
+- Beautiful growth dashboard widgets: `ProgressRing`, `StatsWidget`, `HeatmapWidget`, `AchievementCarousel`, and `GrowthDashboard`.
+- Spark Journey: `JourneyRepository`, `SparkJourneyService`, `/journey` backend, `app/(tabs)/journey.tsx`.
+- Student portfolio: `PortfolioRepository`, `PortfolioService`, `/portfolio` backend, `app/(tabs)/portfolio.tsx`.
+- Executive Dashboard 2.0: `ExecutiveDashboardService` and `GET /executive/dashboard`.
+- AI experience refinement: `AIExperienceService` for weekly/monthly/semester recaps and opportunity recommendations.
+- Student delight: `DelightService` and `CelebrationOverlay` for milestones, birthdays, welcome back.
+- Ambassador & leadership polish: `AmbassadorLeadershipPolishService` with quick actions and summaries.
+- Product review doc and new `docs/SPARK_JOURNEY.md`, `docs/PORTFOLIO_SYSTEM.md`, `docs/EXECUTIVE_DASHBOARD.md`.
+- `017_experience_and_delight.sql` migration for journey, portfolio, and delight tables.
+- New routes and tabs registered.
+
+## Recently completed (Sprint 9)
+- Production readiness docs: `PRODUCTION_ENVIRONMENT.md`, `DEPLOYMENT_VALIDATION.md`, `RELEASE_CHECKLIST.md`.
+- Performance indexes migration `018_sprint9_performance_indexes.sql` and `PERFORMANCE_OPTIMIZATION.md`.
+- Reliability utilities: `RetryService.ts`, `app/lib/retry.ts`, `app/lib/requestQueue.ts`, `RELIABILITY.md`.
+- Security audit: `SECURITY_AUDIT.md`, `rateLimit.ts` middleware, `InputValidationService.ts`.
+- Expanded Vitest tests and `TEST_REPORT.md`.
+- Observability: `MetricsRepository.ts`, `ObservabilityService.ts`, `GET /metrics`, `019_observability.sql`, `OBSERVABILITY.md`.
+- Pilot Operations Dashboard: `PilotOperationsRepository.ts`, `PilotOperationsDashboardService.ts`, `GET /pilot/operations`, `PILOT_OPERATIONS_DASHBOARD.md`.
+- Spark Moments: `SparkMomentsRepository.ts`, `SparkMomentsService.ts`, `GET/POST /spark-moments/*`, `020_spark_moments.sql`, `SPARK_MOMENTS.md`.
+- First-time experience review: `FIRST_TIME_EXPERIENCE.md`.
+- Final product review: `FINAL_REVIEW.md`.
+- v1.0 release package: `VERSION_1_RELEASE_NOTES.md`, `PILOT_ADMIN_GUIDE.md`, `PILOT_STUDENT_GUIDE.md`, `PILOT_AMBASSADOR_GUIDE.md`, `LEADERSHIP_PRESENTATION.md`, `RELEASE_CHECKLIST.md`.
+- Route registry updated for metrics, pilot operations, and spark moments.
+- `CHANGELOG.md`, `docs/SPRINT_STATE.md`, and `NEXT_TASK.md` updated.
+
 ## Remaining work
 - Run `npm install` and typecheck both Worker and Expo projects.
-- Apply all D1 migrations through `016_moderation.sql` and smoke-test new endpoints with `wrangler dev`.
-- Seed `pilot.*`, `community.moderate.*`, and `ambassador.support.*` permissions into the `roles` table.
+- Apply all D1 migrations through `020_spark_moments.sql` and smoke-test new endpoints with `wrangler dev`.
+- Seed `pilot.*`, `community.moderate.*`, `ambassador.support.*`, `admin.executive.view`, and `admin.pilot.view` permissions into the `roles` table.
 - Configure `EXPO_ACCESS_TOKEN` and wire `PushNotificationService` into notification scheduling.
-- Expand Vitest unit tests to cover new repositories and services.
+- Connect `GrowthDashboard` into `app/(tabs)/dashboard.tsx` and wire `journey`/`portfolio` to `cloudflareService`.
+- Expand Vitest unit tests to cover repositories, services, controllers, and widgets.
 - Run the `docs/LOAD_TESTING.md` 100/500/1000-user validation against a staging Worker.
 - Build and deploy the Expo app with `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` set to production.
-- Conduct the end-to-end leadership demo using `docs/SPARKNC_LEADERSHIP_DEMO.md`.
+- Conduct the end-to-end leadership demo using `docs/LEADERSHIP_PRESENTATION.md`.

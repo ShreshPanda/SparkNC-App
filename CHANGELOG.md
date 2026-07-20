@@ -1,5 +1,51 @@
 # Changelog
 
+## [2.3.0] - 2026-07-27 (v1.0 RC1)
+### Added
+- Sprint 9 Launch Candidate, Production & Pilot Readiness features:
+  - Production environment docs: `docs/PRODUCTION_ENVIRONMENT.md`, `docs/DEPLOYMENT_VALIDATION.md`.
+  - Performance optimization indexes in `018_sprint9_performance_indexes.sql` and `docs/PERFORMANCE_OPTIMIZATION.md`.
+  - Reliability utilities: `RetryService.ts`, `app/lib/retry.ts`, `app/lib/requestQueue.ts`, and `docs/RELIABILITY.md`.
+  - Security audit: `docs/SECURITY_AUDIT.md`, `workers/api/middleware/rateLimit.ts`, `workers/api/services/InputValidationService.ts`.
+  - Expanded tests: `workers/tests/authService.test.ts`, `taskService.test.ts`, `retryService.test.ts`, and `docs/TEST_REPORT.md`.
+  - Observability: `MetricsRepository.ts`, `ObservabilityService.ts`, `GET /metrics`, `docs/OBSERVABILITY.md`, and `019_observability.sql`.
+  - Pilot Operations Dashboard: `PilotOperationsRepository.ts`, `PilotOperationsDashboardService.ts`, `GET /pilot/operations`, and `docs/PILOT_OPERATIONS_DASHBOARD.md`.
+  - Spark Moments: `SparkMomentsRepository.ts`, `SparkMomentsService.ts`, `GET/POST /spark-moments/*`, and `docs/SPARK_MOMENTS.md` with `020_spark_moments.sql`.
+  - First-time experience review: `docs/FIRST_TIME_EXPERIENCE.md`.
+  - Final product review: `docs/FINAL_REVIEW.md`.
+  - Release package: `docs/VERSION_1_RELEASE_NOTES.md`, `docs/PILOT_ADMIN_GUIDE.md`, `docs/PILOT_STUDENT_GUIDE.md`, `docs/PILOT_AMBASSADOR_GUIDE.md`, `docs/LEADERSHIP_PRESENTATION.md`, `docs/RELEASE_CHECKLIST.md`.
+
+### Changed
+- `workers/api/routes/index.ts` now registers metrics, pilot operations, and spark moments routes.
+
+### Security
+- Added rate-limit middleware and input-sanitization utilities.
+- Documented remaining security gaps and remediation steps before pilot.
+
+## [2.2.0] - 2026-07-27
+### Added
+- Sprint 8 Experience, Delight & Product Excellence features:
+  - Premium UI/UX polish: updated `docs/DESIGN_SYSTEM.md`, `docs/COMPONENT_LIBRARY.md`, and `docs/UX_PRINCIPLES.md` with motion, accessibility, and delight guidelines.
+  - Premium motion system: `app/lib/motion.ts` presets, `app/providers/AnimationProvider.tsx` with reduced-motion support.
+  - Beautiful growth dashboard widgets: `ProgressRing`, `StatsWidget`, `HeatmapWidget`, `AchievementCarousel`, and `GrowthDashboard`.
+  - Spark Journey: `JourneyRepository`, `SparkJourneyService`, `GET /journey`, and `app/(tabs)/journey.tsx`.
+  - Student portfolio: `PortfolioRepository`, `PortfolioService`, `GET /portfolio`, and `app/(tabs)/portfolio.tsx`.
+  - Executive Dashboard 2.0: `ExecutiveDashboardService`, `GET /executive/dashboard`, and `docs/EXECUTIVE_DASHBOARD.md`.
+  - AI experience refinement: `AIExperienceService` for weekly, monthly, and semester summaries, opportunities, and memory-aware context.
+  - Student delight features: `DelightService` for birthdays, XP/streak milestones, welcome back, and `CelebrationOverlay`.
+  - Ambassador & leadership polish: `AmbassadorLeadershipPolishService` with quick actions and activity/recognition summaries.
+  - Product review: `docs/PRODUCT_REVIEW.md` and new docs `docs/SPARK_JOURNEY.md`, `docs/PORTFOLIO_SYSTEM.md`.
+  - D1 migration `017_experience_and_delight.sql` for `journey_events`, `portfolio`, and `delight_events`.
+
+### Changed
+- `app/(tabs)/_layout.tsx` now includes `journey` and `portfolio` tabs.
+- `workers/api/routes/index.ts` now registers journey, portfolio, executive dashboard, and delight routes.
+
+### Security
+- Executive dashboard endpoint is protected by `admin.executive.view` permission.
+- No secrets are introduced.
+
+
 ## [2.1.0] - 2026-07-26
 ### Added
 - Sprint 7 Launch, Validation & Real-World Adoption features:

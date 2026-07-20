@@ -251,3 +251,14 @@ Use existing theme modules:
 
 If you add tokens, add them once and update the mapping in theme files.
 
+## 21) Premium polish (Sprint 8)
+- Use 1px hairline borders with `border` tokens for a light, precise look.
+- Cards should have generous internal padding and consistent corner radii (`radius-md`).
+- Avoid heavy shadows; prefer subtle opacity or border shifts for elevation.
+- Maintain a clear "one primary action" rule on every screen.
+- Empty states are full card-height with an icon, friendly title, and a single next action.
+- Loading states use skeleton blocks that mirror final content to prevent layout shift.
+- Touch targets are at least 44x44px; buttons have at least 12px vertical padding.
+- All spacing uses the theme scale; no arbitrary margins.
+- Dark mode preserves the same visual hierarchy with surfaces slightly lighter than the background.
+

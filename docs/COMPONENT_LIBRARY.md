@@ -159,3 +159,37 @@ When adding a component:
 - implement with deterministic states
 - add tests if it owns behavior beyond rendering
 
+## Animation & motion
+### `AnimationProvider`
+- Wraps the app to respect reduced-motion preferences.
+- Exposes `useAnimation` for consistent timing/curves.
+
+### `motion.ts`
+- Shared animation presets: `fadeIn`, `slideUp`, `slideDown`, `scaleIn`, `pulse`.
+- Timing tokens: `micro`, `nav`, `sheet`, `celebration`.
+- Easing tokens: `ease`, `spring`, `bounce`.
+
+### `CelebrationOverlay`
+- Lightweight confetti/particle effect triggered on XP/streak/achievement milestones.
+- Respects reduced motion and auto-dismisses after a short duration.
+
+## Dashboard widgets
+### `ProgressRing`
+- Animated SVG ring for XP/level progress.
+- Uses theme accent color and reduced-motion aware duration.
+
+### `StatsWidget`
+- Card with animated count-up number, label, and optional trend.
+
+### `HeatmapWidget`
+- Weekly or monthly activity heatmap using theme colors.
+
+### `AchievementCarousel`
+- Horizontal snap carousel of recent achievement cards.
+
+## Premium patterns
+- `Shimmer` — skeleton placeholder with brand accent shimmer.
+- `FloatingCard` — card with press feedback and lift animation.
+- `AvatarStack` — overlapping avatar row for community/team contexts.
+- `StatusBadge` — semantic color badge with subtle background.
+

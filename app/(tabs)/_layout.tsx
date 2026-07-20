@@ -16,6 +16,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="person" color={color} size={20} /> }} />
       <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="stats-chart" color={color} size={20} /> }} />
       <Tabs.Screen name="growth" options={{ title: 'Timeline', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="time" color={color} size={20} /> }} />
+      <Tabs.Screen name="journey" options={{ title: 'Journey', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="map" color={color} size={20} /> }} />
+      <Tabs.Screen name="portfolio" options={{ title: 'Portfolio', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="briefcase" color={color} size={20} /> }} />
       <Tabs.Screen name="achievements" options={{ title: 'Achievements', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="trophy" color={color} size={20} /> }} />
       <Tabs.Screen name="ai" options={{ title: 'Spark AI', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="sparkles" color={color} size={20} /> }} />
       <Tabs.Screen name="ambassador" options={{ title: 'Ambassador', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="people" color={color} size={20} /> }} />

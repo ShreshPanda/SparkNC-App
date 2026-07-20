@@ -110,3 +110,21 @@ This doc complements:
 
 Any UX decision must map back to these principles.
 
+## 13) Premium motion
+- Every motion should explain state change, never just decorate.
+- Use the motion tokens from `AnimationProvider` so all durations/easings are consistent.
+- Screen entrances fade/slide in over 220–280ms.
+- Card entrances stagger 40–80ms apart for a crafted feel.
+- Celebrate milestones with short, optional animations that auto-dismiss.
+- Always honor reduced-motion by disabling translation/scale and using simple opacity only.
+
+## 14) Haptics & audio
+- Light haptic on toggle success.
+- Medium haptic on milestone completions (XP, streak, goal).
+- No sound by default; only use audio if user explicitly enables it.
+
+## 15) Premium delight
+- Delight moments are small, fast, and non-blocking.
+- Examples: welcome-back greeting, birthday badge, streak flame pulse, XP counter tick.
+- Never let delight interrupt primary workflows or accessibility tools.
+
