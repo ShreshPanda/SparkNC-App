@@ -1,4 +1,4 @@
-# Release Checklist — SparkNC v1.0 RC1
+# Release Checklist — SparkNC v1.0 RC2
 
 ## Pre-release
 
@@ -13,11 +13,11 @@
 
 ## Deployment
 
-- [ ] `npx wrangler d1 migrations apply sparknc-db`
-- [ ] `npx wrangler deploy`
-- [ ] `GET /health` returns `status: ok`
-- [ ] `GET /version` returns the expected version
-- [ ] `GET /status` reports all expected tables
+- [ ] `npm run verify` and `npm run check:deployment` pass.
+- [ ] `node scripts/apply-d1-migrations.mjs <production-database-name> remote` reports all migrations applied.
+- [ ] `npm run deploy:dry-run` passes before `npm run deploy:worker`.
+- [ ] `node scripts/check-worker-health.mjs https://<worker-domain>` passes.
+- [ ] `/status` reports the expected tables.
 
 ## Smoke tests
 

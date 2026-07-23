@@ -54,7 +54,7 @@ export class StudentInsightRepository extends BaseRepository {
       .bind(userId)
       .all();
     const user = await this.db
-      .prepare('SELECT xp, streak_current, streak_longest FROM users WHERE id = ? LIMIT 1')
+      .prepare('SELECT xp_total, current_streak, longest_streak FROM users WHERE id = ? LIMIT 1')
       .bind(userId)
       .all();
     const events = await this.db
@@ -74,10 +74,10 @@ export class StudentInsightRepository extends BaseRepository {
     const taskList = tasks.results ?? [];
     const goalList = goals.results ?? [];
 
-    const xp = Number(row.xp ?? 0);
+    const xp = Number(row.xp_total ?? 0);
     const level = Math.floor(xp / 100) + 1;
-    const currentStreak = Number(row.streak_current ?? 0);
-    const longestStreak = Number(row.streak_longest ?? 0);
+    const currentStreak = Number(row.current_streak ?? 0);
+    const longestStreak = Number(row.longest_streak ?? 0);
     const tasksTotal = taskList.length;
     const tasksCompleted = taskList.filter((r) => r.completed).length;
     const goalsTotal = goalList.length;

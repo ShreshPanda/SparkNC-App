@@ -1,59 +1,53 @@
 # Next Task
 
-## Sprint 9 handoff
+## Sprint 10 Part 2 — "The Spark That Stays" v1.0 (in progress)
 
-Sprint 9 — Launch Candidate, Production & Pilot Readiness — is complete. All planned phases have been implemented and documented:
-- Complete deployment
-- Performance optimization
-- Reliability
-- Security audit
-- Complete testing
-- Observability
-- Pilot analytics
-- First-time experience
-- Spark moments
-- Final product review
-- v1.0 release package
+SparkNC is feature-complete and integrated. Sprint 10 Part 2 refined the product into a seamless, demo-ready experience. Demo Mode is now functional, accessibility coverage is stronger, and the final product review doc is in place. Remaining work: portfolio evolution, ambassador command center, leadership dashboards, community refinement, emotional experience review, and full role walkthroughs.
 
-Review the new docs before continuing:
-- `docs/PRODUCTION_ENVIRONMENT.md`
-- `docs/DEPLOYMENT_VALIDATION.md`
-- `docs/PERFORMANCE_OPTIMIZATION.md`
-- `docs/RELIABILITY.md`
-- `docs/SECURITY_AUDIT.md`
-- `docs/TEST_REPORT.md`
-- `docs/OBSERVABILITY.md`
-- `docs/PILOT_OPERATIONS_DASHBOARD.md`
-- `docs/FIRST_TIME_EXPERIENCE.md`
-- `docs/SPARK_MOMENTS.md`
-- `docs/FINAL_REVIEW.md`
-- `docs/VERSION_1_RELEASE_NOTES.md`
-- `docs/RELEASE_CHECKLIST.md`
-- `docs/SPRINT_STATE.md`
+## Immediate Sprint 10 Part 2 next steps
 
-## Next priorities
+1. **Deployment readiness**: production origin, `ALLOWED_ORIGINS`, role permissions, staging validation per `docs/PRODUCTION_CHECKLIST.md`.
 
-1. **Tooling & Verification**
-   - Run `npm install` and verify `workers` and Expo projects typecheck cleanly.
-   - Apply all D1 migrations from `001` through `020`.
-   - Use `wrangler dev` to smoke-test `/metrics`, `/pilot/operations`, `/spark-moments`, plus earlier Sprint 8 endpoints.
+## Completed Sprint 10 work
 
-2. **Permissions & Secrets**
-   - Seed `admin.executive.view`, `admin.pilot.view`, `pilot.*`, `community.moderate.*`, and `ambassador.support.*` permissions into the `roles` table.
-   - Set `EXPO_ACCESS_TOKEN` via `wrangler secret put` and register `ExpoPushProvider` in `workers/index.ts`.
-   - Verify no secrets are committed.
+- `dashboard.tsx` now generates personalized `TodaysSpark` insights from real tasks, goals, events, opportunities, streak, and XP.
+- Time-aware greeting added to `dashboard.tsx` and `ai.tsx`.
+- `growth.tsx` uses `SparkButton` for `Generate Timeline` and `Refresh Timeline` CTAs.
+- `ai.tsx` greeting loads the user’s first name and uses a coach-like subtitle.
+- `TodaysSpark` insights fade in smoothly for a premium feel.
+- Presentation Mode hides the bottom tab bar and shows a non-intrusive "Demo mode" pill with larger headers and extra padding.
+- `app/onboarding.tsx` `ActivityIndicator` color uses `colors.foreground` instead of hardcoded `#ffffff`.
+- `login.tsx` and `signup.tsx` CTAs/links now include `accessibilityRole` and `accessibilityLabel`.
+- `portfolio.tsx` hero, icon sections, count pills, and tag-style skills/badges.
+- `ambassador.tsx` "Today's focus" summary, status pills, sorted students, richer actions.
+- `analytics.tsx`, `impact.tsx`, `progress.tsx` hero KPI tiles, `SparkCard` sections, clearer trends.
+- `messages.tsx` and `feedback.tsx` `SparkCard`, `SparkButton`, `Ionicons`, `FadeIn`, empty states.
+- `docs/EMOTIONAL_REVIEW.md` and `docs/ROLE_WALKTHROUGH.md` created.
+- Verified no `TODO`/`FIXME`/`HACK`/`XXX` markers and no native `Button` imports in `app/`.
+- `CHANGELOG.md`, `PROJECT_STATUS.md`, `SPRINT_STATE.md`, and `NEXT_TASK.md` updated for Sprint 10 and Part 2.
+- `docs/SPARKNC_V1_PRODUCT_REVIEW.md` and `docs/SPARKNC_V1_RELEASE_REPORT.md` created.
+- `npm run typecheck`, `npm run typecheck:worker`, and `npm run test:worker` all pass.
 
-3. **Frontend integration**
-   - Connect `GrowthDashboard` into `app/(tabs)/dashboard.tsx` and bind widgets to live data.
-   - Wire `app/(tabs)/journey.tsx` and `app/(tabs)/portfolio.tsx` to `cloudflareService`.
-   - Trigger Spark Moments on task/goal completion and milestone events.
+## Blocking deployment work (unchanged)
 
-4. **Testing**
-   - Expand Vitest coverage for repositories, services, and controllers.
-   - Add React Native Testing Library tests for dashboard, journey, and portfolio screens.
+4. **Deploy the Expo frontend to a production HTTPS origin.**
+5. **Update `ALLOWED_ORIGINS`** in `wrangler.jsonc` with the exact production frontend origin, then run `npm run check:deployment` and `npm run deploy:worker`.
+6. **Seed required role permissions** in the production D1 database (`pilot.*`, `community.moderate.*`, `ambassador.support.*`, `admin.executive.view`, `admin.pilot.view`).
+7. **Create a staging D1 database and Worker environment** only when formal staging validation is required.
+8. **Complete staging validation** per `docs/STAGING_VALIDATION.md` and load testing before opening the pilot.
 
-5. **Performance & Release**
-   - Run the `docs/LOAD_TESTING.md` 100/500/1000-user validation in staging.
-   - Export the Expo web build (`npx expo export --platform web`) and run EAS builds for iOS/Android.
-   - Deploy the Worker and Expo app with `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` set to production.
-   - Conduct the end-to-end leadership demo using `docs/LEADERSHIP_PRESENTATION.md`.
+## Deployment facts
+
+- Worker URL: `https://sparknc-api.shreshpanda.workers.dev`
+- D1 database: `sparknc-production` (`ac09ed8a-0ba3-4d4e-88b4-3fed3d8bca73`)
+- Worker Version ID: `f3ab077e-5e91-4255-81db-1f6d3c7c0edf`
+- `ALLOWED_ORIGINS` is currently local-development only: `http://localhost:19006,http://localhost:8081,http://localhost:3000`.
+
+## Canonical documents
+
+- `docs/CLOUDFLARE_SETUP.md`
+- `docs/PRODUCTION_CHECKLIST.md`
+- `docs/STAGING_VALIDATION.md`
+- `docs/PRODUCTION_VERIFICATION.md`
+- `docs/DEPLOYMENT_AUTOMATION.md`
+- `docs/MAC_SETUP.md`

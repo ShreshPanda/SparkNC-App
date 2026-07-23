@@ -14,10 +14,11 @@ function createService(context?: ExecutiveControllerContext) {
   return new ExecutiveDashboardService(new EngagementAnalyticsService(new EngagementAnalyticsRepository(db)), new AnalyticsRepository(db));
 }
 
-export async function getExecutiveDashboardController(input: { organizationId?: string; days?: number }, context?: ExecutiveControllerContext) {
+export async function getExecutiveDashboardController(input: { organizationId?: string; days?: number } | undefined, context?: ExecutiveControllerContext) {
   const userId = context?.userId;
   if (!userId) return { ok: false, code: 'UNAUTHORIZED', message: 'Unauthorized' };
+  const safeInput = input ?? {};
   const service = createService(context);
-  const dashboard = await service.buildDashboard(input.organizationId, input.days ?? 30);
+  const dashboard = await service.buildDashboard(safeInput.organizationId, safeInput.days ?? 30);
   return { ok: true, dashboard };
 }

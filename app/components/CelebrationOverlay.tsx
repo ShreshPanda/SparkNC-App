@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useTheme } from '../providers/ThemeProvider';
-import { typography } from '../theme';
+import { useTheme } from '../../providers/ThemeProvider';
+import { typography } from '../../theme';
 
 interface CelebrationOverlayProps {
   title?: string;

@@ -18,7 +18,7 @@ function createFakeDb(results: Record<string, Record<string, unknown>[]> = {}) {
 describe('AuthService', () => {
   it('returns null for an invalid session', async () => {
     const db = createFakeDb({
-      ['SELECT id, user_id, expires_at, revoked_at FROM sessions WHERE id = ? LIMIT 1|["missing"]']: [],
+      ['SELECT id, user_id, created_at, expires_at, revoked_at FROM sessions WHERE id = ?|["missing"]']: [],
     });
     const service = new AuthService(db as any);
     const result = await service.validateSession('missing');
@@ -28,8 +28,8 @@ describe('AuthService', () => {
   it('returns null for an expired session', async () => {
     const past = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString();
     const db = createFakeDb({
-      ['SELECT id, user_id, expires_at, revoked_at FROM sessions WHERE id = ? LIMIT 1|["expired"]']: [
-        { id: 'expired', user_id: 'user-1', expires_at: past, revoked_at: null },
+      ['SELECT id, user_id, created_at, expires_at, revoked_at FROM sessions WHERE id = ?|["expired"]']: [
+        { id: 'expired', user_id: 'user-1', created_at: new Date().toISOString(), expires_at: past, revoked_at: null },
       ],
     });
     const service = new AuthService(db as any);
@@ -39,10 +39,10 @@ describe('AuthService', () => {
 
   it('returns the authenticated user for a valid session', async () => {
     const future = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
-    const sessionsKey = 'SELECT id, user_id, expires_at, revoked_at FROM sessions WHERE id = ? LIMIT 1|["valid-session"]';
+    const sessionsKey = 'SELECT id, user_id, created_at, expires_at, revoked_at FROM sessions WHERE id = ?|["valid-session"]';
     const usersKey = 'SELECT id, email, name, role, school_id FROM users WHERE id = ? LIMIT 1|["user-1"]';
     const db = createFakeDb({
-      [sessionsKey]: [{ id: 'valid-session', user_id: 'user-1', expires_at: future, revoked_at: null }],
+      [sessionsKey]: [{ id: 'valid-session', user_id: 'user-1', created_at: new Date().toISOString(), expires_at: future, revoked_at: null }],
       [usersKey]: [{ id: 'user-1', email: 'test@sparknc.app', name: 'Test User', role: 'student', school_id: 'school-1' }],
     });
     const service = new AuthService(db as any);

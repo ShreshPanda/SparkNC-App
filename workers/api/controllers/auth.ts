@@ -24,7 +24,7 @@ export async function registerController(input: RegisterInput, context?: { env?:
   assertNonEmpty(input.password, 'Password is required');
   assertNonEmpty(input.name, 'Name is required');
 
-  const isSecure = true;
+  const isSecure = env?.COOKIE_SECURE === 'true';
 
   try {
     const result = await service.register(input);
@@ -51,7 +51,7 @@ export async function loginController(input: LoginInput, context?: { env?: unkno
   assertNonEmpty(input.email, 'Email is required');
   assertNonEmpty(input.password, 'Password is required');
 
-  const isSecure = true;
+  const isSecure = env?.COOKIE_SECURE === 'true';
 
   try {
     const result = await service.login(input.email, input.password);
@@ -84,7 +84,7 @@ export async function logoutController(_input: unknown, context?: { env?: unknow
   return {
     ok: true,
     data: { message: 'Logged out' },
-    setCookie: buildClearedSessionCookie(),
+    setCookie: buildClearedSessionCookie(env?.COOKIE_SECURE === 'true'),
   };
 }
 

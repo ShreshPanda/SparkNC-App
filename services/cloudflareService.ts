@@ -1,4 +1,5 @@
 import {
+  User,
   User as UserProfile,
   Task as TaskItem,
   Goal as GoalItem,
@@ -7,6 +8,7 @@ import {
   Conversation,
   Announcement,
   Notification,
+  SchoolIdentity,
   StudentDashboard,
   StudentInsight,
   GrowthEvent,
@@ -26,6 +28,7 @@ import {
   NotificationPreference,
   GrowthStatistics,
   GrowthStory,
+  OpportunityRecommendation,
   AICompanionOutput,
   AdminCommandCenterReport,
   AmbassadorCommandCenter,
@@ -34,7 +37,7 @@ import {
 
 const runtimeEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
 
-const workerUrl = runtimeEnv.EXPO_PUBLIC_CLOUDFLARE_WORKER_URL ?? '';
+const workerUrl = (runtimeEnv.EXPO_PUBLIC_CLOUDFLARE_WORKER_URL ?? '').replace(/\/$/, '');
 
 let sessionCookie: string | null = null;
 
@@ -84,6 +87,7 @@ async function api<T = unknown>(method: string, path: string, body?: unknown): P
   const response = await fetch(`${workerUrl}${path}`, {
     method,
     headers,
+    credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const setCookie = response.headers.get('Set-Cookie') ?? response.headers.get('set-cookie');
@@ -103,6 +107,45 @@ export interface AuthPayload {
 export interface MePayload {
   ok: boolean;
   data: UserProfile & { xp: number; streak: { current: number; longest: number } };
+}
+
+export interface JourneyMonth {
+  month: string;
+  year: number;
+  events: { id: string; title: string; description: string; category: string; badge?: string; date: string }[];
+}
+
+export interface JourneyPayload {
+  ok: boolean;
+  journey: JourneyMonth[];
+}
+
+export interface PortfolioRecord {
+  type: string;
+  title: string;
+  description?: string;
+  date?: string;
+}
+
+export interface PortfolioSummary {
+  xp: number;
+  streak: number;
+  projects: PortfolioRecord[];
+  goals: PortfolioRecord[];
+  achievements: PortfolioRecord[];
+  events: PortfolioRecord[];
+  skills: PortfolioRecord[];
+  certificates: PortfolioRecord[];
+  leadership: PortfolioRecord[];
+  community: PortfolioRecord[];
+  volunteer: PortfolioRecord[];
+  badges: PortfolioRecord[];
+  reflections: PortfolioRecord[];
+}
+
+export interface PortfolioPayload {
+  ok: boolean;
+  portfolio: PortfolioSummary;
 }
 
 export const cloudflareService = {
@@ -128,7 +171,16 @@ export const cloudflareService = {
   },
 
   async getUserProfile(_id: string): Promise<UserProfile | null> {
-    return null;
+    const currentUser = await this.getMe();
+    return currentUser;
+  },
+
+  async updateProfile(_id: string, _input: Record<string, unknown>): Promise<UserProfile> {
+    throw new Error('Profile updates are not available through the Worker API');
+  },
+
+  async saveOnboarding(input: { goals: string[]; interests: string[]; growthAreas: string[]; supportStyle: string; completed: boolean }) {
+    return api('POST', '/onboarding', input);
   },
 
   // Tasks
@@ -142,6 +194,10 @@ export const cloudflareService = {
 
   async completeTask(id: string) {
     return api<{ item: TaskItem; xpAwarded: number; streak: { current: number; longest: number } }>('POST', `/tasks/${id}/complete`);
+  },
+
+  async updateTask(id: string, input: { title?: string; description?: string; category?: string; dueDate?: string; completed?: boolean; xpReward?: number }) {
+    return api<{ item: TaskItem }>('PUT', `/tasks/${id}`, input);
   },
 
   async deleteTask(id: string) {
@@ -159,6 +215,10 @@ export const cloudflareService = {
 
   async completeGoal(id: string) {
     return api<{ item: GoalItem; xpAwarded: number; streak: { current: number; longest: number } }>('POST', `/goals/${id}/complete`);
+  },
+
+  async updateGoal(id: string, input: { title?: string; description?: string; progress?: number; completed?: boolean; xpReward?: number }) {
+    return api<{ item: GoalItem }>('PUT', `/goals/${id}`, input);
   },
 
   async deleteGoal(id: string) {
@@ -218,6 +278,11 @@ export const cloudflareService = {
 
   async markAnnouncementRead(id: string): Promise<{ success: boolean; announcementId: string }> {
     return api<{ success: boolean; announcementId: string }>('POST', `/announcements/${id}/read`);
+  },
+
+  // Schools
+  async getSchool(schoolId: string): Promise<SchoolIdentity | null> {
+    return api<SchoolIdentity | null>('GET', `/schools/${encodeURIComponent(schoolId)}`);
   },
 
   // Notifications
@@ -376,6 +441,11 @@ export const cloudflareService = {
     return api<GrowthStory>('GET', '/growth-timeline/story');
   },
 
+  // Opportunities
+  async getOpportunities(): Promise<OpportunityRecommendation[]> {
+    return api<OpportunityRecommendation[]>('GET', '/opportunities');
+  },
+
   // AI Companion
   async askAI(message: string): Promise<AICompanionOutput> {
     return api<AICompanionOutput>('POST', '/ai/chat', { message, intent: 'chat' });
@@ -395,6 +465,22 @@ export const cloudflareService = {
 
   async getAIGrowth(): Promise<AICompanionOutput> {
     return api<AICompanionOutput>('POST', '/ai/growth');
+  },
+
+  // Admin
+  async listAdminUsers(): Promise<User[]> {
+    const result = await api<{ ok: boolean; items: User[] }>('GET', '/admin/users');
+    return result.items ?? [];
+  },
+
+  async createAdminEvent(input: { title: string; description?: string; startsAt: string; endsAt?: string; location?: string }): Promise<Event> {
+    const result = await api<{ ok: boolean; item: Event }>('POST', '/admin/events', input);
+    return result.item;
+  },
+
+  async createAdminAnnouncement(input: { title: string; body: string; scope?: string }): Promise<Announcement> {
+    const result = await api<{ ok: boolean; item: Announcement }>('POST', '/admin/announcements', input);
+    return result.item;
   },
 
   // Command centers
@@ -420,6 +506,32 @@ export const cloudflareService = {
   },
 
   // Demo
+  async getJourney(): Promise<JourneyMonth[]> {
+    const result = await api<JourneyPayload>('GET', '/journey');
+    return result.journey ?? [];
+  },
+
+  async getPortfolio(): Promise<PortfolioSummary> {
+    const result = await api<PortfolioPayload>('GET', '/portfolio');
+    return (
+      result.portfolio ?? {
+        xp: 0,
+        streak: 0,
+        projects: [],
+        goals: [],
+        achievements: [],
+        events: [],
+        skills: [],
+        certificates: [],
+        leadership: [],
+        community: [],
+        volunteer: [],
+        badges: [],
+        reflections: [],
+      }
+    );
+  },
+
   async getDemoScenario(): Promise<DemoScenario> {
     return api<DemoScenario>('GET', '/demo');
   },

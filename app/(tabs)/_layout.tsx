@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePresentation } from '../../providers/PresentationProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
+  const { enabled } = usePresentation();
 
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted }}>
+    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted, tabBarStyle: enabled ? { display: 'none' } : undefined }}>
       <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="grid" color={color} size={20} /> }} />
       <Tabs.Screen name="tasks" options={{ title: 'Tasks', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="checkmark-circle" color={color} size={20} /> }} />
       <Tabs.Screen name="goals" options={{ title: 'Goals', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="flag" color={color} size={20} /> }} />

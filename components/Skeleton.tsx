@@ -4,7 +4,7 @@ import { useTheme } from '../providers/ThemeProvider';
 
 interface SkeletonProps {
   height?: number;
-  width?: number | string;
+  width?: number | `${number}%`;
   borderRadius?: number;
 }
 

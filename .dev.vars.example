@@ -15,3 +15,5 @@ BETTER_AUTH_URL=http://localhost:8787
 # Set to 'development' when running locally so cookies are not forced secure.
 ENVIRONMENT=development
 COOKIE_SECURE=false
+COOKIE_SAMESITE=Strict
+ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19006,http://localhost:3000

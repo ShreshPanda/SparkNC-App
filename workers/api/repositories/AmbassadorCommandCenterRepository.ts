@@ -25,13 +25,13 @@ export class AmbassadorCommandCenterRepository extends BaseRepository {
 
   async listStudents(schoolId: string, ambassadorId: string): Promise<AmbassadorStudentRecord[]> {
     const result = await this.db
-      .prepare(`SELECT u.id, u.name, u.email, u.xp, u.streak_current, u.last_active,
+      .prepare(`SELECT u.id, u.name, u.email, u.xp_total as xp, u.current_streak as streak_current, u.last_activity_at as last_active,
         (SELECT COUNT(*) FROM goals WHERE goals.user_id = u.id AND completed = 1) as goals_completed,
         (SELECT COUNT(*) FROM tasks WHERE tasks.user_id = u.id AND completed = 1) as tasks_completed
        FROM users u
        LEFT JOIN ambassador_assignments a ON a.student_id = u.id AND a.ambassador_id = ?
        WHERE u.school_id = ? OR a.ambassador_id = ?
-       ORDER BY u.last_active DESC`)
+       ORDER BY u.last_activity_at DESC`)
       .bind(ambassadorId, schoolId, ambassadorId)
       .all();
     return (result.results ?? []).map((row) => ({

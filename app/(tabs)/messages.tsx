@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppShell } from '../../components/AppShell';
+import { EmptyState } from '../../components/EmptyState';
+import { FadeIn } from '../../components/AnimatedWrapper';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -61,55 +66,70 @@ export default function MessagesScreen() {
 
   return (
     <AppShell title="Messages">
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.md }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl }}>
         {loading ? <ActivityIndicator color={colors.accent} /> : (
-          <FlatList
-            data={conversations}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            ListEmptyComponent={<Text style={{ color: colors.muted }}>No conversations yet.</Text>}
-            renderItem={({ item }) => (
-              <Pressable onPress={() => openConversation(item)} style={[styles.card, { backgroundColor: colors.card }]}>
-                <Text style={[styles.heading, { color: colors.foreground }]}>{item.participantIds.join(', ')}</Text>
-                {item.unreadCount ? <Text style={{ color: colors.accent }}>{item.unreadCount} unread</Text> : null}
-              </Pressable>
-            )}
-          />
+          conversations.length === 0 ? (
+            <EmptyState title="No conversations yet" message="Start a new message to connect with a mentor or peer." icon="chatbubble-outline" />
+          ) : (
+            <FlatList
+              data={conversations}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <Pressable onPress={() => openConversation(item)} style={[styles.card, { backgroundColor: colors.card }]} accessibilityRole="button" accessibilityLabel={`Conversation with ${item.participantIds.join(', ')}`}>
+                  <View style={styles.conversationHeader}>
+                    <Ionicons name="chatbubbles-outline" size={20} color={colors.accent} />
+                    <Text style={[styles.heading, { color: colors.foreground }]}>{item.participantIds.join(', ')}</Text>
+                  </View>
+                  {item.unreadCount ? (
+                    <View style={[styles.unreadPill, { backgroundColor: colors.highlight }]}>
+                      <Text style={[styles.unreadText, { color: colors.foreground }]}>{item.unreadCount} unread</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              )}
+            />
+          )
         )}
 
         {selected ? (
-          <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Messages</Text>
-            {messages.length === 0 ? <Text style={{ color: colors.muted }}>No messages.</Text> : null}
-            {messages.map((m) => (
-              <View key={m.id} style={{ marginBottom: spacing.sm }}>
-                <Text style={{ color: colors.foreground }}>{m.senderId}: {m.body}</Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>{m.readStatus}</Text>
-              </View>
-            ))}
-          </View>
+          <FadeIn delay={80}>
+            <SparkCard>
+              <Text style={[styles.heading, { color: colors.foreground }]}>Messages</Text>
+              {messages.length === 0 ? <Text style={[styles.body, { color: colors.muted }]}>No messages.</Text> : null}
+              {messages.map((m, i) => (
+                <View key={m.id} style={[styles.messageRow, { marginBottom: spacing.sm }]}>
+                  <View style={[styles.messageBubble, i % 2 === 0 ? { backgroundColor: colors.border } : { backgroundColor: colors.highlight }]}>
+                    <Text style={[styles.messageSender, { color: colors.foreground }]}>{m.senderId}</Text>
+                    <Text style={[styles.messageBody, { color: colors.foreground }]}>{m.body}</Text>
+                    <Text style={[styles.messageMeta, { color: colors.muted }]}>{m.readStatus}</Text>
+                  </View>
+                </View>
+              ))}
+            </SparkCard>
+          </FadeIn>
         ) : null}
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>New Message</Text>
-          <TextInput
-            placeholder="Recipient ID"
-            placeholderTextColor={colors.muted}
-            value={form.recipientId}
-            onChangeText={(text) => setForm((f) => ({ ...f, recipientId: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
-          />
-          <TextInput
-            placeholder="Message"
-            placeholderTextColor={colors.muted}
-            value={form.body}
-            onChangeText={(text) => setForm((f) => ({ ...f, body: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
-          />
-          <Pressable onPress={send} style={[styles.button, { backgroundColor: colors.accent }]}>
-            <Text style={{ color: '#fff' }}>Send</Text>
-          </Pressable>
-        </View>
+        <FadeIn delay={160}>
+          <SparkCard>
+            <Text style={[styles.heading, { color: colors.foreground }]}>New message</Text>
+            <TextInput
+              placeholder="Who should receive this?"
+              placeholderTextColor={colors.muted}
+              value={form.recipientId}
+              onChangeText={(text) => setForm((f) => ({ ...f, recipientId: text }))}
+              style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
+            />
+            <TextInput
+              placeholder="Write your message..."
+              placeholderTextColor={colors.muted}
+              value={form.body}
+              onChangeText={(text) => setForm((f) => ({ ...f, body: text }))}
+              style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
+            />
+            <SparkButton title="Send" onPress={send} variant="primary" />
+          </SparkCard>
+        </FadeIn>
 
         {error ? <Text style={{ color: colors.error }}>{error}</Text> : null}
       </ScrollView>
@@ -120,6 +140,14 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
   heading: { ...typography.heading },
-  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md },
-  button: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12, alignSelf: 'flex-start' },
+  body: { ...typography.body },
+  conversationHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  unreadPill: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 999, marginTop: spacing.xs },
+  unreadText: { ...typography.caption, fontWeight: '700' },
+  messageRow: { alignItems: 'flex-start' },
+  messageBubble: { padding: spacing.sm, borderRadius: 12 },
+  messageSender: { ...typography.caption, fontWeight: '700' },
+  messageBody: { ...typography.body },
+  messageMeta: { ...typography.caption },
+  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md, marginBottom: spacing.sm },
 });

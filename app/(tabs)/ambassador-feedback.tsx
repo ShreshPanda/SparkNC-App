@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
@@ -79,7 +80,7 @@ export default function AmbassadorFeedbackScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
           />
           <TextInput
-            placeholder="Observation"
+            placeholder="Describe what you observed"
             placeholderTextColor={colors.muted}
             multiline
             value={observation}
@@ -87,14 +88,14 @@ export default function AmbassadorFeedbackScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
           />
           <TextInput
-            placeholder="Suggested improvement (optional)"
+            placeholder="Suggest a next step or resource (optional)"
             placeholderTextColor={colors.muted}
             multiline
             value={suggestedImprovement}
             onChangeText={setSuggestedImprovement}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
           />
-          <Button title="Submit Observation" onPress={submit} color={colors.accent} />
+          <SparkButton title="Submit Observation" onPress={submit} variant="primary" />
         </View>
 
         {loading ? <ActivityIndicator color={colors.accent} /> : null}

@@ -46,7 +46,7 @@ export class AnalyticsRepository extends BaseRepository {
       this.db.prepare('SELECT COUNT(*) as count FROM goals WHERE completed = 1').bind().all(),
       this.db.prepare('SELECT COUNT(*) as count FROM event_attendees').bind().all(),
       this.db.prepare('SELECT COUNT(*) as count FROM messages').bind().all(),
-      this.db.prepare('SELECT SUM(xp) as total FROM users').bind().all(),
+      this.db.prepare('SELECT SUM(xp_total) as total FROM users').bind().all(),
     ]);
 
     const xpTrend = await this.getXPTrend(7);

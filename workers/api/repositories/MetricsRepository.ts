@@ -20,6 +20,15 @@ export interface ErrorRecord {
   created_at: string;
 }
 
+export interface SlowQueryRecord {
+  id: string;
+  operation: string;
+  query: string;
+  duration_ms: number;
+  request_id: string | null;
+  created_at: string;
+}
+
 export class MetricsRepository extends BaseRepository {
   constructor(private readonly db: {
     prepare: (query: string) => {
@@ -54,6 +63,13 @@ export class MetricsRepository extends BaseRepository {
     return this.db
       .prepare('INSERT INTO error_logs (id, request_id, path, method, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(error.id, error.request_id, error.path, error.method, error.message, error.created_at)
+      .run();
+  }
+
+  async recordSlowQuery(metric: SlowQueryRecord) {
+    return this.db
+      .prepare('INSERT INTO slow_queries (id, operation, query, duration_ms, request_id, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(metric.id, metric.operation, metric.query, metric.duration_ms, metric.request_id, metric.created_at)
       .run();
   }
 

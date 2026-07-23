@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { GoalRepository, type CreateGoalInput, type UpdateGoalInput } from '../repositories/GoalRepository';
+import { GrowthTimelineRepository } from '../repositories/GrowthTimelineRepository';
 import { assertNonEmpty } from '../validators/baseValidator';
 import { XPService } from './xpService';
 import { StreakService } from './streakService';
@@ -26,6 +27,7 @@ export class GoalService {
     private readonly repository: GoalRepository,
     private readonly xpService: XPService,
     private readonly streakService: StreakService,
+    private readonly growthRepository: GrowthTimelineRepository,
     private readonly notificationService?: NotificationService,
   ) {}
 
@@ -62,6 +64,14 @@ export class GoalService {
     if (goal.completed) {
       xpAwarded = await this.xpService.awardGoalCompletion(userId, goal.xpReward);
       streak = await this.streakService.recordActivity(userId);
+      const now = new Date().toISOString();
+      await this.growthRepository.recordEvent(userId, {
+        eventType: 'goal_completed',
+        title: 'Completed goal',
+        description: goal.title,
+        occurredAt: goal.updatedAt ?? now,
+        metadata: JSON.stringify({ goalId: goal.id, xp: xpAwarded }),
+      });
     }
 
     return {
@@ -117,6 +127,14 @@ export class GoalService {
 
     const xpAwarded = await this.xpService.awardGoalCompletion(userId, updated.xpReward);
     const streak = await this.streakService.recordActivity(userId);
+    const now = new Date().toISOString();
+    await this.growthRepository.recordEvent(userId, {
+      eventType: 'goal_completed',
+      title: 'Completed goal',
+      description: updated.title,
+      occurredAt: updated.updatedAt ?? now,
+      metadata: JSON.stringify({ goalId: updated.id, xp: xpAwarded }),
+    });
 
     if (this.notificationService) {
       await this.notificationService.createNotification({

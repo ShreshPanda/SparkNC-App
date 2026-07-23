@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
+import { FadeIn } from '../../components/AnimatedWrapper';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -94,14 +98,14 @@ export default function FeedbackScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Submit Feedback</Text>
           <TextInput
-            placeholder="Category"
+            placeholder="Feedback topic, e.g. App, Events, Learning"
             placeholderTextColor={colors.muted}
             value={category}
             onChangeText={setCategory}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
           />
           <TextInput
-            placeholder="Rating (1-5)"
+            placeholder="Rating 1–5"
             placeholderTextColor={colors.muted}
             keyboardType="numeric"
             value={rating}
@@ -109,27 +113,27 @@ export default function FeedbackScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
           />
           <TextInput
-            placeholder="Optional written feedback"
+            placeholder="What did you like? What can we improve?"
             placeholderTextColor={colors.muted}
             multiline
             value={feedbackText}
             onChangeText={setFeedbackText}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
           />
-          <Button title="Submit Feedback" onPress={submitFeedback} color={colors.accent} />
+          <SparkButton title="Submit Feedback" onPress={submitFeedback} variant="primary" />
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Suggest a Feature</Text>
           <TextInput
-            placeholder="Title"
+            placeholder="Feature idea title"
             placeholderTextColor={colors.muted}
             value={title}
             onChangeText={setTitle}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
           />
           <TextInput
-            placeholder="Description"
+            placeholder="Describe the idea and why it would help"
             placeholderTextColor={colors.muted}
             multiline
             value={description}
@@ -137,13 +141,13 @@ export default function FeedbackScreen() {
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
           />
           <TextInput
-            placeholder="Category (App improvement, Events, Learning resources, Communication, Productivity)"
+            placeholder="Idea category, e.g. App, Events, Learning"
             placeholderTextColor={colors.muted}
             value={requestCategory}
             onChangeText={setRequestCategory}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
           />
-          <Button title="Submit Idea" onPress={submitFeature} color={colors.accent} />
+          <SparkButton title="Submit Idea" onPress={submitFeature} variant="primary" />
         </View>
 
         {loading ? <ActivityIndicator color={colors.accent} /> : null}
@@ -151,7 +155,7 @@ export default function FeedbackScreen() {
         <View style={styles.section}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Your Feedback</Text>
           {myFeedback.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>No feedback yet.</Text>
+            <Text style={[styles.body, { color: colors.muted }]}>You haven't shared feedback yet.</Text>
           ) : (
             myFeedback.map((f) => (
               <View key={f.id} style={[styles.rowCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -166,7 +170,7 @@ export default function FeedbackScreen() {
         <View style={styles.section}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Ideas Board</Text>
           {featureRequests.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>No feature requests yet.</Text>
+            <Text style={[styles.body, { color: colors.muted }]}>No ideas submitted yet. Be the first!</Text>
           ) : (
             featureRequests.map((r) => (
               <View key={r.id} style={[styles.rowCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -174,7 +178,7 @@ export default function FeedbackScreen() {
                 <Text style={{ color: colors.muted }}>{r.category} • {r.status}</Text>
                 <View style={styles.voteRow}>
                   <Text style={{ color: colors.foreground }}>{r.votes} votes</Text>
-                  <Button title="Vote" onPress={() => vote(r.id)} color={colors.accent} />
+                  <SparkButton title="Vote" onPress={() => vote(r.id)} variant="primary" />
                 </View>
               </View>
             ))

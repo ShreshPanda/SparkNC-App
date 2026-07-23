@@ -18,12 +18,12 @@ This audit covers the SparkNC Cloudflare Worker backend, Expo frontend, deployme
 
 | Area | Risk | Remediation |
 | --- | --- | --- |
-| Rate limiting | None implemented | Add `workers/api/middleware/rateLimit.ts` and apply to auth/public endpoints |
+| Rate limiting | Isolate-local rate limiting is implemented at the Worker boundary | Configure a distributed edge control before broad public launch if global enforcement is required |
 | Input validation | Zod schemas exist but are not wired to all controllers | Audit each controller; add `InputValidationService` normalization |
 | SQL injection | All repository queries use parameterized `bind` values | Continue enforcing parameterized queries; never interpolate strings |
 | CSRF | Cookies used for auth | Ensure `SameSite=Strict` and validate `Origin` header on mutating requests |
 | Error exposure | `err.message` may leak internal details | In production, return generic `Internal server error` and log the real error |
-| Secret rotation | No documented rotation cadence | Add 90-day rotation policy in `docs/PRODUCTION_RUNBOOK.md` |
+| Secret rotation | Rotation remains an operational responsibility | Follow the secret-management and incident procedure in `docs/CLOUDFLARE_SETUP.md` and `docs/OBSERVABILITY_RUNBOOK.md` |
 | Audit completeness | Not every route uses `isSensitiveRequest` | Update `isSensitiveRequest` prefix list as new admin routes are added |
 | Rate of brute force on auth | No account lockout | Add exponential backoff on failed login attempts |
 | Dependency vulnerabilities | Not audited | Run `npm audit` in CI before every deploy |
@@ -31,12 +31,11 @@ This audit covers the SparkNC Cloudflare Worker backend, Expo frontend, deployme
 
 ## Recommendations before pilot
 
-1. Implement and wire the rate-limit middleware on `/auth/*`, `/feedback`, and public endpoints.
-2. Add `InputValidationService` sanitization to all controllers accepting user data.
-3. Replace raw `err.message` in production responses with generic messages.
-4. Run `npm audit` and resolve critical/high issues.
-5. Document incident response and secret rotation in `docs/PRODUCTION_RUNBOOK.md`.
-6. Enable Cloudflare security features (WAF, bot management, DDoS protection) at the zone level.
+1. Confirm rate-limit behavior and CORS allowlisting in staging.
+2. Add `InputValidationService` normalization to remaining controller inputs as future maintenance work.
+3. Run `npm audit` and resolve critical/high issues.
+4. Enable suitable Cloudflare zone security controls before broad public launch.
+5. Follow `docs/CLOUDFLARE_SETUP.md` and `docs/OBSERVABILITY_RUNBOOK.md` for deployment and incident operations.
 
 ## Compliance
 

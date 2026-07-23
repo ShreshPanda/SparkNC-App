@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService } from '../../services/authService';
-import { spacing, typography } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 
 export default function SignupScreen() {
   const { colors } = useTheme();
@@ -34,7 +34,7 @@ export default function SignupScreen() {
   }
 
   return (
-    <AppShell title="Create account">
+    <AppShell title="Create Account">
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.heading, { color: colors.foreground }]}>Join SparkNC</Text>
         {error && <Text style={[styles.error, { color: colors.highlight }]}>{error}</Text>}
@@ -62,11 +62,11 @@ export default function SignupScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <Pressable style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleRegister} disabled={loading}>
-          {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Get started</Text>}
+        <Pressable style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleRegister} disabled={loading} accessibilityRole="button" accessibilityLabel={loading ? 'Creating account' : 'Create account'}>
+          {loading ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.buttonText}>Get started</Text>}
         </Pressable>
         <Link href="/(auth)/login" asChild>
-          <Pressable>
+          <Pressable accessibilityRole="link" accessibilityLabel="Sign in to existing account">
             <Text style={[styles.link, { color: colors.accent }]}>Already have an account? Sign in</Text>
           </Pressable>
         </Link>
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   error: { ...typography.body },
   input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
   button: { paddingVertical: spacing.md, borderRadius: 999, alignItems: 'center' },
-  buttonText: { color: '#ffffff', fontWeight: '700' },
+  buttonText: { color: colors.white, fontWeight: '700' },
   link: { textAlign: 'center', ...typography.body },
 });

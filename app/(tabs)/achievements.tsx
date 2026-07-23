@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
@@ -71,8 +72,8 @@ export default function AchievementsScreen() {
           ))
         )}
 
-        <Button title={checking ? 'Checking...' : 'Check for New Unlocks'} onPress={check} color={colors.accent} disabled={checking} />
-        <Button title="Refresh" onPress={load} color={colors.muted} />
+        <SparkButton title={checking ? 'Checking...' : 'Check for New Unlocks'} onPress={check} variant="primary" disabled={checking} />
+        <SparkButton title="Refresh" onPress={load} variant="muted" />
       </ScrollView>
     </AppShell>
   );

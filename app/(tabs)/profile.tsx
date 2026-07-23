@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService, type AuthSession } from '../../services/authService';
@@ -77,7 +78,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.button}>
-          <Button title="Sign out" onPress={handleLogout} color={colors.accent} />
+          <SparkButton title="Sign out" onPress={handleLogout} variant="primary" />
         </View>
       </ScrollView>
     </AppShell>

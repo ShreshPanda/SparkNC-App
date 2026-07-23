@@ -19,7 +19,7 @@ export class EngagementAnalyticsRepository extends BaseRepository {
   async activeUsers(days: number): Promise<number> {
     const cutoff = this.daysAgoISO(days);
     const result = await this.db
-      .prepare('SELECT COUNT(DISTINCT user_id) as cnt FROM growth_events WHERE created_at >= ?')
+      .prepare('SELECT COUNT(DISTINCT user_id) as cnt FROM growth_events WHERE occurred_at >= ?')
       .bind(cutoff)
       .all();
     return Number(result.results?.[0]?.cnt ?? 0);
@@ -45,7 +45,7 @@ export class EngagementAnalyticsRepository extends BaseRepository {
   async completedTasks(days: number): Promise<number> {
     const cutoff = this.daysAgoISO(days);
     const result = await this.db
-      .prepare("SELECT COUNT(*) as cnt FROM growth_events WHERE action = 'task_completed' AND created_at >= ?")
+      .prepare("SELECT COUNT(*) as cnt FROM growth_events WHERE event_type = 'task' AND occurred_at >= ?")
       .bind(cutoff)
       .all();
     return Number(result.results?.[0]?.cnt ?? 0);
@@ -54,7 +54,7 @@ export class EngagementAnalyticsRepository extends BaseRepository {
   async completedGoals(days: number): Promise<number> {
     const cutoff = this.daysAgoISO(days);
     const result = await this.db
-      .prepare("SELECT COUNT(*) as cnt FROM growth_events WHERE action = 'goal_completed' AND created_at >= ?")
+      .prepare("SELECT COUNT(*) as cnt FROM growth_events WHERE event_type = 'goal' AND occurred_at >= ?")
       .bind(cutoff)
       .all();
     return Number(result.results?.[0]?.cnt ?? 0);
@@ -72,7 +72,7 @@ export class EngagementAnalyticsRepository extends BaseRepository {
   async featureUsage(days: number): Promise<ActivityCount[]> {
     const cutoff = this.daysAgoISO(days);
     const result = await this.db
-      .prepare('SELECT action, COUNT(*) as cnt FROM growth_events WHERE created_at >= ? GROUP BY action ORDER BY cnt DESC')
+      .prepare('SELECT event_type as action, COUNT(*) as cnt FROM growth_events WHERE occurred_at >= ? GROUP BY event_type ORDER BY cnt DESC')
       .bind(cutoff)
       .all();
     return (result.results ?? []).map((row) => ({
@@ -87,7 +87,7 @@ export class EngagementAnalyticsRepository extends BaseRepository {
       const start = this.daysAgoISO(i + 1);
       const end = this.daysAgoISO(i);
       const result = await this.db
-        .prepare('SELECT COUNT(DISTINCT user_id) as cnt FROM growth_events WHERE created_at >= ? AND created_at < ?')
+        .prepare('SELECT COUNT(DISTINCT user_id) as cnt FROM growth_events WHERE occurred_at >= ? AND occurred_at < ?')
         .bind(start, end)
         .all();
       series.push({ label: start.slice(0, 10), count: Number(result.results?.[0]?.cnt ?? 0) });

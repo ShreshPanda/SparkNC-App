@@ -13,7 +13,7 @@ function createService(context?: MetricsControllerContext) {
   return new ObservabilityService(new MetricsRepository(db));
 }
 
-export async function getMetricsController(input: { sinceHours?: number }, context?: MetricsControllerContext) {
+export async function getMetricsController(input: { sinceHours?: number } = {}, context?: MetricsControllerContext) {
   const userId = context?.userId;
   if (!userId || !context?.isAuthenticated) {
     return { ok: false, code: 'UNAUTHORIZED', message: 'Unauthorized' };

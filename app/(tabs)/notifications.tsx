@@ -60,8 +60,8 @@ export default function NotificationsScreen() {
                 <Text style={[styles.heading, { color: colors.foreground }]}>{item.title}</Text>
                 <Text style={{ color: colors.muted }}>{item.body}</Text>
                 {!item.isRead ? (
-                  <Pressable onPress={() => markRead(item.id)} style={[styles.button, { backgroundColor: colors.accent }]}>
-                    <Text style={{ color: '#fff' }}>Mark Read</Text>
+                  <Pressable onPress={() => markRead(item.id)} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Mark ${item.title} as read`}>
+                    <Text style={{ color: colors.foreground }}>Mark Read</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -69,8 +69,8 @@ export default function NotificationsScreen() {
           />
         )}
         {notifications.length > 0 ? (
-          <Pressable onPress={markAllRead} style={[styles.button, { backgroundColor: colors.muted }]}>
-            <Text style={{ color: '#fff' }}>Mark All Read</Text>
+          <Pressable onPress={markAllRead} style={[styles.button, { backgroundColor: colors.muted }]} accessibilityRole="button" accessibilityLabel="Mark all notifications as read">
+            <Text style={{ color: colors.foreground }}>Mark All Read</Text>
           </Pressable>
         ) : null}
         {error ? <Text style={{ color: colors.error }}>{error}</Text> : null}

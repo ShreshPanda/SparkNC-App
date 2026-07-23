@@ -17,8 +17,14 @@ export class SparkJourneyService {
 
   async getJourney(userId: string, options: SparkJourneyOptions = {}): Promise<SparkJourneyMonth[]> {
     const events = await this.journeyRepository.listEvents(userId);
+    const parseDate = (value: string): Date | null => {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
     const filtered = events.filter((e) => {
-      const date = new Date(e.date);
+      const date = parseDate(e.date);
+      if (!date) return false;
       const eventYear = date.getFullYear();
       const eventMonth = date.getMonth() + 1;
       if (options.year && eventYear !== options.year) return false;
@@ -32,7 +38,8 @@ export class SparkJourneyService {
 
     const groups = new Map<string, JourneyEvent[]>();
     for (const event of filtered) {
-      const date = new Date(event.date);
+      const date = parseDate(event.date);
+      if (!date) continue;
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const list = groups.get(key) ?? [];
       list.push(event);
@@ -40,11 +47,17 @@ export class SparkJourneyService {
     }
 
     const months: SparkJourneyMonth[] = [];
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
     const orderedKeys = Array.from(groups.keys()).sort((a, b) => b.localeCompare(a));
     for (const key of orderedKeys) {
-      const [year, month] = key.split('-');
-      const label = new Date(Number(year), Number(month) - 1, 1).toLocaleString('default', { month: 'long' });
-      months.push({ month: `${label} ${year}`, year: Number(year), events: groups.get(key) ?? [] });
+      const [yearStr, monthStr] = key.split('-');
+      const year = Number(yearStr);
+      const monthIndex = Number(monthStr) - 1;
+      const label = monthNames[monthIndex] ?? 'Unknown';
+      months.push({ month: `${label} ${year}`, year, events: groups.get(key) ?? [] });
     }
     return months;
   }

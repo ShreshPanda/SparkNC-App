@@ -1,4 +1,5 @@
 import { TaskRepository } from '../repositories/TaskRepository';
+import { GrowthTimelineRepository } from '../repositories/GrowthTimelineRepository';
 import { TaskService } from '../services/taskService';
 import { XPService } from '../services/xpService';
 import { StreakService } from '../services/streakService';
@@ -26,8 +27,9 @@ function createTaskService(context?: TaskControllerContext) {
   const repository = new TaskRepository(db as never);
   const xpService = new XPService(db as never);
   const streakService = new StreakService(db as never);
+  const growthRepository = new GrowthTimelineRepository(db as never);
   const notificationService = new NotificationService(new NotificationRepository(db as never));
-  return new TaskService(repository, xpService, streakService, notificationService);
+  return new TaskService(repository, xpService, streakService, growthRepository, notificationService);
 }
 
 export async function listTasksController(context?: TaskControllerContext) {

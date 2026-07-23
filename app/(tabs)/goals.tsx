@@ -1,14 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
+import { SparkButton } from '../../components/SparkButton';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { spacing, typography } from '../../theme';
-import type { Goal } from '../../shared/types';
+import { colors, spacing, typography } from '../../theme';
+import type { Goal, GrowthStatistics } from '../../shared/types';
+
+type SuggestedGoal = {
+  id: string;
+  title: string;
+  description: string;
+  reason: string;
+};
+
+function generateSuggestions(stats: GrowthStatistics, existingGoals: Goal[]): SuggestedGoal[] {
+  const suggestions: SuggestedGoal[] = [];
+  const lowerTitles = existingGoals.map((g) => g.title.toLowerCase());
+  const has = (text: string) => lowerTitles.some((t) => t.includes(text.toLowerCase()));
+
+  if (stats.currentStreak < 7 && !has('streak')) {
+    suggestions.push({
+      id: 'streak-7',
+      title: 'Build a 7-day streak',
+      description: 'Complete at least one task each day for the next week.',
+      reason: `Your current streak is ${stats.currentStreak} days.`,
+    });
+  }
+  if (stats.eventsAttended < 3 && !has('event')) {
+    suggestions.push({
+      id: 'attend-event',
+      title: 'Attend one community event',
+      description: 'Join an event that matches your interests.',
+      reason: `You have attended ${stats.eventsAttended} events.`,
+    });
+  }
+  if (stats.tasksCompleted < 5 && !has('task')) {
+    suggestions.push({
+      id: 'complete-tasks',
+      title: 'Complete three tasks',
+      description: 'Finish three tasks to build momentum and earn XP.',
+      reason: `You have completed ${stats.tasksCompleted} tasks.`,
+    });
+  }
+  if (!has('leadership')) {
+    suggestions.push({
+      id: 'explore-leadership',
+      title: 'Explore a leadership opportunity',
+      description: 'Look for a club or project where you can take initiative.',
+      reason: 'Leadership goals help grow impact and confidence.',
+    });
+  }
+  return suggestions.slice(0, 3);
+}
 
 export default function GoalsScreen() {
   const { colors } = useTheme();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestedGoal[]>([]);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -16,8 +66,14 @@ export default function GoalsScreen() {
   async function load() {
     setLoading(true);
     try {
-      const items = await cloudflareService.listGoals();
+      const [items, stats] = await Promise.all([
+        cloudflareService.listGoals(),
+        cloudflareService.getGrowthStatistics().catch(() => null),
+      ]);
       setGoals(items);
+      if (stats) {
+        setSuggestions(generateSuggestions(stats, items));
+      }
     } finally {
       setLoading(false);
     }
@@ -27,12 +83,13 @@ export default function GoalsScreen() {
     load();
   }, []);
 
-  async function handleAdd() {
-    if (!title.trim()) return;
+  async function handleAdd(customTitle?: string, customDescription?: string) {
+    const t = (customTitle ?? title).trim();
+    if (!t) return;
     try {
       const { item } = await cloudflareService.createGoal({
-        title: title.trim(),
-        description: description.trim() || undefined,
+        title: t,
+        description: (customDescription ?? description).trim() || undefined,
       });
       setGoals((prev) => [item, ...prev]);
       setTitle('');
@@ -60,6 +117,34 @@ export default function GoalsScreen() {
     }
   }
 
+  function handleAccept(s: SuggestedGoal) {
+    handleAdd(s.title, s.description);
+    setSuggestions((prev) => prev.filter((x) => x.id !== s.id));
+  }
+
+  function handleDismiss(id: string) {
+    setDismissed((prev) => [...prev, id]);
+  }
+
+  function renderSuggestion(s: SuggestedGoal) {
+    if (dismissed.includes(s.id)) return null;
+    return (
+      <View key={s.id} style={[styles.suggestion, { backgroundColor: colors.highlight + '20', borderColor: colors.highlight }]}>
+        <Text style={[styles.itemTitle, { color: colors.foreground }]}>{s.title}</Text>
+        <Text style={[styles.body, { color: colors.muted }]}>{s.description}</Text>
+        <Text style={[styles.caption, { color: colors.highlight }]}>{s.reason}</Text>
+        <View style={styles.suggestionActions}>
+          <Pressable onPress={() => handleAccept(s)} style={[styles.suggestionButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Accept suggestion ${s.title}`}>
+            <Text style={styles.suggestionButtonText}>Accept</Text>
+          </Pressable>
+          <Pressable onPress={() => handleDismiss(s.id)} style={[styles.suggestionButton, { backgroundColor: colors.border }]} accessibilityRole="button" accessibilityLabel={`Dismiss suggestion ${s.title}`}>
+            <Text style={[styles.suggestionButtonText, { color: colors.foreground }]}>Dismiss</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   function renderItem({ item }: { item: Goal }) {
     return (
       <View style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -71,9 +156,9 @@ export default function GoalsScreen() {
         <Text style={[styles.caption, { color: colors.muted }]}>Progress: {item.progress}%</Text>
         <View style={styles.actions}>
           {!item.completed && (
-            <Button title="Complete" onPress={() => handleComplete(item.id)} color={colors.accent} />
+            <SparkButton title="Complete" onPress={() => handleComplete(item.id)} variant="primary" accessibilityLabel={`Complete ${item.title}`} />
           )}
-          <Button title="Delete" onPress={() => handleDelete(item.id)} color={colors.highlight} />
+          <SparkButton title="Delete" onPress={() => handleDelete(item.id)} variant="secondary" accessibilityLabel={`Delete ${item.title}`} />
         </View>
       </View>
     );
@@ -84,20 +169,27 @@ export default function GoalsScreen() {
       <View style={styles.form}>
         <TextInput
           style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Goal title"
+          placeholder="What do you want to achieve?"
           placeholderTextColor={colors.muted}
           value={title}
           onChangeText={setTitle}
         />
         <TextInput
           style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Description"
+          placeholder="Why does this matter to you?"
           placeholderTextColor={colors.muted}
           value={description}
           onChangeText={setDescription}
         />
-        <Button title="Add goal" onPress={handleAdd} color={colors.accent} />
+        <SparkButton title="Add goal" onPress={() => handleAdd()} variant="primary" accessibilityLabel="Add new goal" />
       </View>
+
+      {suggestions.length > 0 && (
+        <View style={styles.suggestionsSection}>
+          <Text style={[styles.heading, { color: colors.foreground }]}>Suggested Goals</Text>
+          {suggestions.map(renderSuggestion)}
+        </View>
+      )}
 
       {loading && goals.length === 0 ? (
         <ActivityIndicator color={colors.accent} />
@@ -117,6 +209,12 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   form: { gap: spacing.sm, marginBottom: spacing.md },
   input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
+  heading: { ...typography.heading, marginBottom: spacing.sm },
+  suggestionsSection: { gap: spacing.md, marginBottom: spacing.md },
+  suggestion: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
+  suggestionActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  suggestionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12 },
+  suggestionButtonText: { color: colors.white, fontWeight: '700' },
   list: { gap: spacing.md, paddingBottom: spacing.xl },
   item: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

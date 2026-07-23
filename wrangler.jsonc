@@ -1,54 +1,69 @@
 {
-  // SparkNC Cloudflare Worker configuration.
-  // Copy this file as the source of truth for Wrangler. No secrets belong here.
-  "$schema": "node_modules/wrangler/config-schema.json",
-
-  // Worker identifier. This becomes the default hostname:
-  // <name>.<subdomain>.workers.dev
-  "name": "sparknc-api",
-
-  // Worker entrypoint compiled by Wrangler.
-  "main": "workers/index.ts",
-
-  // Compatibility date must be set to a known Workers release.
-  "compatibility_date": "2025-07-18",
-
-  // Enable Node.js APIs used by the project (crypto, etc.).
-  "compatibility_flags": ["nodejs_compat"],
-
-  // Preserve existing vars when adding/removing them.
-  "keep_vars": true,
-
-  // Minify the Worker bundle for production.
-  "minify": true,
-
-  // Non-secret environment variables. Secrets (SESSION_SECRET, BETTER_AUTH_SECRET)
-  // must be configured with `wrangler secret put` or in the Cloudflare dashboard.
-  "vars": {
-    "ENVIRONMENT": "production",
-    "COOKIE_SAMESITE": "Strict",
-    "COOKIE_SECURE": "true"
-  },
-
-  // D1 database binding. The `binding` name is referenced in code as `env.DB`.
-  // Replace <YOUR_D1_DATABASE_NAME> and <YOUR_D1_DATABASE_ID> with the values
-  // from the Cloudflare dashboard after creating the database.
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "<YOUR_D1_DATABASE_NAME>",
-      "database_id": "<YOUR_D1_DATABASE_ID>"
-    }
-  ],
-
-  // Migrations are applied with `wrangler d1 migrations apply <DB_NAME>`.
-  "migrations_dir": "workers/database/migrations"
-
-  // Optional: add KV or R2 bindings here if they are needed later.
-  // "kv_namespaces": [
-  //   { "binding": "CACHE", "id": "<YOUR_KV_NAMESPACE_ID>" }
-  // ],
-  // "r2_buckets": [
-  //   { "binding": "ASSETS", "bucket_name": "<YOUR_R2_BUCKET_NAME>" }
-  // ]
+	// SparkNC Cloudflare Worker configuration.
+	// Copy this file as the source of truth for Wrangler. No secrets belong here.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Worker identifier. This becomes the default hostname:
+	// <name>.<subdomain>.workers.dev
+	"name": "sparknc-api",
+	// Worker entrypoint compiled by Wrangler.
+	"main": "workers/index.ts",
+	// Compatibility date must be set to a known Workers release.
+	"compatibility_date": "2026-07-20",
+	// Enable Node.js APIs used by the project (crypto, etc.).
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// Preserve existing vars when adding/removing them.
+	"keep_vars": true,
+	// Minify the Worker bundle for production.
+	"minify": true,
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	// Non-secret environment variables. Secrets (SESSION_SECRET, BETTER_AUTH_SECRET)
+	// must be configured with `wrangler secret put` or in the Cloudflare dashboard.
+	"vars": {
+		"ENVIRONMENT": "production",
+		"COOKIE_SAMESITE": "Strict",
+		"COOKIE_SECURE": "true",
+		"BETTER_AUTH_URL": "https://sparknc-api.shreshpanda.workers.dev",
+		"ALLOWED_ORIGINS": "http://localhost:19006,http://localhost:8081,http://localhost:3000"
+	},
+	// D1 database binding. The `binding` name is referenced in code as `env.DB`.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sparknc-production",
+			"database_id": "ac09ed8a-0ba3-4d4e-88b4-3fed3d8bca73",
+			"migrations_dir": "workers/database/migrations"
+		}
+	],
+	"env": {
+		"staging": {
+			"name": "sparknc-api-staging",
+			"vars": {
+				"ENVIRONMENT": "staging",
+				"COOKIE_SAMESITE": "Strict",
+				"COOKIE_SECURE": "true",
+				"BETTER_AUTH_URL": "https://<YOUR_STAGING_WORKER_DOMAIN>",
+				"ALLOWED_ORIGINS": "https://<YOUR_STAGING_WEB_ORIGIN>"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "<YOUR_STAGING_D1_DATABASE_NAME>",
+					"database_id": "<YOUR_STAGING_D1_DATABASE_ID>",
+					"migrations_dir": "workers/database/migrations"
+				}
+			]
+		}
+	},
+	// Optional: add KV or R2 bindings here if they are needed later.
+	// "kv_namespaces": [
+	//   { "binding": "CACHE", "id": "<YOUR_KV_NAMESPACE_ID>" }
+	// ],
+	// "r2_buckets": [
+	//   { "binding": "ASSETS", "bucket_name": "<YOUR_R2_BUCKET_NAME>" }
+	// ]
 }

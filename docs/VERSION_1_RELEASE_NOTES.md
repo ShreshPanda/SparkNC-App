@@ -29,7 +29,7 @@ SparkNC v1.0 RC1 is a cross-platform productivity and communication platform for
 
 ## Deployment
 
-See `docs/DEPLOYMENT.md` and `docs/PRODUCTION_DEPLOYMENT.md`.
+See `docs/CLOUDFLARE_SETUP.md`, `docs/DEPLOYMENT.md`, and `docs/PRODUCTION_VERIFICATION.md`.
 
 ## Known limitations
 
@@ -39,4 +39,4 @@ See `docs/DEPLOYMENT.md` and `docs/PRODUCTION_DEPLOYMENT.md`.
 
 ## Support
 
-For operational questions, see `docs/PRODUCTION_RUNBOOK.md`.
+For operational questions, see `docs/OBSERVABILITY_RUNBOOK.md` and `docs/DEPLOYMENT_AUTOMATION.md`.

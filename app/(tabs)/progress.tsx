@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
+import { FadeIn } from '../../components/AnimatedWrapper';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -57,71 +61,85 @@ export default function ProgressScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
 
-        <View style={[styles.row, styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.highlight }]}>{dashboard?.xp ?? 0}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>XP</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.accent }]}>{dashboard?.level ?? 1}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>Level</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>{dashboard?.currentStreak ?? 0}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>Streak</Text>
-          </View>
-        </View>
+        <FadeIn delay={0}>
+          <SparkCard style={[styles.hero, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.heroTitle, { color: colors.card }]}>Your progress</Text>
+            <Text style={[styles.heroBody, { color: colors.card }]}>
+              {dashboard?.xp ?? 0} XP · Level {dashboard?.level ?? 1} · {dashboard?.currentStreak ?? 0}-day streak
+            </Text>
+          </SparkCard>
+        </FadeIn>
 
-        <View style={[styles.row, styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.highlight }]}>{dashboard?.tasksCompleted ?? 0}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>Tasks</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.accent }]}>{dashboard?.goalsCompleted ?? 0}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>Goals</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>{dashboard?.eventsAttended ?? 0}</Text>
-            <Text style={[styles.statLabel, { color: colors.muted }]}>Events</Text>
-          </View>
-        </View>
+        <FadeIn delay={80}>
+          <SparkCard style={styles.kpiGrid}>
+            <KpiTile icon="flame-outline" label="XP" value={dashboard?.xp ?? 0} colors={colors} accent />
+            <KpiTile icon="trending-up-outline" label="Level" value={dashboard?.level ?? 1} colors={colors} />
+            <KpiTile icon="flash-outline" label="Streak" value={dashboard?.currentStreak ?? 0} colors={colors} />
+            <KpiTile icon="checkmark-done-outline" label="Tasks" value={dashboard?.tasksCompleted ?? 0} colors={colors} />
+            <KpiTile icon="trophy-outline" label="Goals" value={dashboard?.goalsCompleted ?? 0} colors={colors} />
+            <KpiTile icon="calendar-outline" label="Events" value={dashboard?.eventsAttended ?? 0} colors={colors} />
+          </SparkCard>
+        </FadeIn>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Engagement Score</Text>
-          <Text style={[styles.statValue, { color: colors.accent }]}>{dashboard?.engagementScore ?? 0}</Text>
-        </View>
+        <FadeIn delay={160}>
+          <SparkCard>
+            <Text style={[styles.heading, { color: colors.foreground }]}>Engagement score</Text>
+            <Text style={[styles.score, { color: colors.accent }]}>{dashboard?.engagementScore ?? 0}</Text>
+          </SparkCard>
+        </FadeIn>
 
-        <View style={styles.section}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Insights</Text>
-          {dashboard?.insights && dashboard.insights.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>No insights yet. Tap Generate to analyze your data.</Text>
-          ) : (
-            dashboard?.insights?.map((insight: StudentInsight) => (
-              <View key={insight.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.heading, { color: colors.foreground }]}>{insight.title}</Text>
-                <Text style={[styles.body, { color: colors.muted }]}>{insight.description}</Text>
-              </View>
-            ))
-          )}
-        </View>
+        <FadeIn delay={240}>
+          <SparkCard>
+            <Text style={[styles.heading, { color: colors.foreground }]}>Insights</Text>
+            {dashboard?.insights && dashboard.insights.length === 0 ? (
+              <Text style={[styles.body, { color: colors.muted }]}>No insights yet. Tap Generate to analyze your data.</Text>
+            ) : (
+              dashboard?.insights?.map((insight: StudentInsight) => (
+                <View key={insight.id} style={styles.insightRow}>
+                  <Ionicons name="sparkles-outline" size={16} color={colors.accent} />
+                  <View style={styles.insightText}>
+                    <Text style={[styles.insightTitle, { color: colors.foreground }]}>{insight.title}</Text>
+                    <Text style={[styles.body, { color: colors.muted }]}>{insight.description}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </SparkCard>
+        </FadeIn>
 
-        <Button title={generating ? 'Analyzing...' : 'Generate Insights'} onPress={generate} color={colors.accent} disabled={generating} />
-        <Button title="Refresh" onPress={load} color={colors.muted} />
+        <FadeIn delay={320}>
+          <SparkButton title={generating ? 'Analyzing...' : 'Generate Insights'} onPress={generate} variant="primary" disabled={generating} />
+          <SparkButton title="Refresh" onPress={load} variant="muted" />
+        </FadeIn>
       </ScrollView>
     </AppShell>
+  );
+}
+
+function KpiTile({ icon, label, value, colors, accent }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string | number; colors: any; accent?: boolean }) {
+  return (
+    <View style={styles.kpi}>
+      <Ionicons name={icon} size={24} color={accent ? colors.accent : colors.muted} />
+      <Text style={[styles.kpiValue, { color: accent ? colors.accent : colors.foreground }]}>{value}</Text>
+      <Text style={[styles.kpiLabel, { color: colors.muted }]}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { gap: spacing.md, paddingBottom: spacing.xl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  hero: { padding: spacing.xl, borderRadius: 24, gap: spacing.sm },
+  heroTitle: { ...typography.title, fontSize: 28 },
+  heroBody: { ...typography.body },
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, borderRadius: 20, gap: 0 },
+  kpi: { width: '33%', alignItems: 'center', padding: spacing.sm },
+  kpiValue: { ...typography.title },
+  kpiLabel: { ...typography.caption, textAlign: 'center' },
   heading: { ...typography.heading },
   body: { ...typography.body },
-  stat: { alignItems: 'center', flex: 1 },
-  statValue: { ...typography.title },
-  statLabel: { ...typography.caption },
-  section: { gap: spacing.sm },
+  score: { ...typography.title },
+  insightRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.xs },
+  insightText: { flex: 1 },
+  insightTitle: { ...typography.body, fontWeight: '700' },
 });

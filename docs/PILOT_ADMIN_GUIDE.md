@@ -41,4 +41,4 @@ Call `GET /pilot/operations?days=30` to export daily active users, task/goal com
 
 ## Escalation
 
-For deployment issues, see `docs/PRODUCTION_RUNBOOK.md`.
+For deployment issues, see `docs/CLOUDFLARE_SETUP.md` and `docs/OBSERVABILITY_RUNBOOK.md`.

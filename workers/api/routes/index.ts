@@ -9,6 +9,7 @@ import { createAIMemoryRoutes } from './aiMemory';
 import { createAIRoutes } from './ai';
 import { createAmbassadorSupportRoutes } from './ambassadorSupport';
 import { createAnalyticsRoutes } from './analytics';
+import { createCommunityRoutes } from './community';
 import { createCommunityModerationRoutes } from './communityModeration';
 import { createEngagementAnalyticsRoutes } from './engagementAnalytics';
 import { createAmbassadorRoutes } from './ambassador';
@@ -16,12 +17,16 @@ import { createAmbassadorFeedbackRoutes } from './ambassadorFeedback';
 import { createAuditRoutes } from './audit';
 import { createDelightRoutes } from './delight';
 import { createDemoRoutes } from './demo';
+import { createDemoSeedRoutes } from './demoSeed';
 import { createExecutiveRoutes } from './executive';
 import { createFeedbackAnalysisRoutes } from './feedbackAnalysis';
+import { createFeedbackRoutes } from './feedback';
 import { createFeatureRequestRoutes } from './featureRequests';
 import { createJourneyRoutes } from './journey';
 import { createMetricsRoutes } from './metrics';
 import { createPilotOperationsRoutes } from './pilotOperations';
+import { createOpportunityRoutes } from './opportunities';
+import { createSchoolRoutes } from './schools';
 import { createPortfolioRoutes } from './portfolio';
 import { createSparkMomentsRoutes } from './sparkMoments';
 import { createGrowthRoutes } from './growth';
@@ -63,7 +68,9 @@ export const routeRegistry = {
   'metrics': ['/metrics'],
   'pilot-operations': ['/pilot/operations'],
   'spark-moments': ['/spark-moments', '/spark-moments/trigger'],
+  'schools': ['/schools/:id'],
   'pilot': ['/pilot/groups', '/pilot/participants', '/pilot/me'],
+  'opportunities': ['/opportunities'],
   'onboarding': ['/onboarding', '/onboarding/complete'],
   'ai-memory': ['/ai/memory'],
   'engagement-analytics': ['/analytics/engagement', '/analytics/retention', '/analytics/features'],
@@ -94,6 +101,7 @@ export const routeRegistry = {
     ...createAuditRoutes(),
     ...createCommunityRoutes(),
     ...createCommunityModerationRoutes(),
+    ...createFeedbackRoutes(),
     ...createFeedbackAnalysisRoutes(),
     ...createAmbassadorFeedbackRoutes(),
     ...createFeatureRequestRoutes(),
@@ -101,8 +109,11 @@ export const routeRegistry = {
     ...createPortfolioRoutes(),
     ...createExecutiveRoutes(),
     ...createDelightRoutes(),
+    ...createDemoSeedRoutes(),
     ...createMetricsRoutes(),
     ...createPilotOperationsRoutes(),
+    ...createOpportunityRoutes(),
+    ...createSchoolRoutes(),
     ...createSparkMomentsRoutes(),
     ...createImpactAnalyticsRoutes(),
     ...createImpactReportRoutes(),

@@ -2,7 +2,7 @@ import { BaseRepository } from './baseRepository';
 
 export interface PortfolioRecord {
   userId: string;
-  type: 'project' | 'goal' | 'achievement' | 'event' | 'community' | 'certificate' | 'skill';
+  type: 'project' | 'goal' | 'achievement' | 'event' | 'community' | 'certificate' | 'skill' | 'volunteer' | 'badge' | 'reflection';
   id: string;
   title: string;
   description?: string;

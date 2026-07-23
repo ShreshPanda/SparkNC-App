@@ -20,6 +20,17 @@ export interface ScopedStudents {
   count: number;
 }
 
+export interface SchoolIdentityRecord {
+  id: string;
+  name: string;
+  slug: string;
+  city?: string;
+  country?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  mascot?: string;
+}
+
 export class OrganizationService {
   constructor(private readonly db: {
     prepare: (query: string) => {
@@ -52,13 +63,33 @@ export class OrganizationService {
       scopes.push({ type: 'organization', name: 'Entire organization' });
     }
     if (user?.schoolId) {
-      scopes.push({ type: 'school', id: user.schoolId, name: `School ${user.schoolId}` });
+      const school = await this.getSchoolById(user.schoolId);
+      scopes.push({ type: 'school', id: user.schoolId, name: school?.name ?? `School ${user.schoolId}` });
     }
     if (user?.locationId) {
       scopes.push({ type: 'location', id: user.locationId, name: `Location ${user.locationId}` });
     }
 
     return scopes;
+  }
+
+  async getSchoolById(schoolId: string): Promise<SchoolIdentityRecord | null> {
+    const result = await this.db
+      .prepare('SELECT id, name, slug, city, country, primary_color, secondary_color, mascot FROM schools WHERE id = ? LIMIT 1')
+      .bind(schoolId)
+      .all();
+    const row = result.results?.[0];
+    if (!row) return null;
+    return {
+      id: String(row.id ?? ''),
+      name: String(row.name ?? ''),
+      slug: String(row.slug ?? ''),
+      city: row.city == null ? undefined : String(row.city),
+      country: row.country == null ? undefined : String(row.country),
+      primaryColor: row.primary_color == null ? undefined : String(row.primary_color),
+      secondaryColor: row.secondary_color == null ? undefined : String(row.secondary_color),
+      mascot: row.mascot == null ? undefined : String(row.mascot),
+    };
   }
 
   private async getUserById(userId: string): Promise<{ role: string; schoolId?: string; locationId?: string } | null> {

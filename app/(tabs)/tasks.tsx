@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { spacing, typography } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 import type { Task } from '../../shared/types';
 
 export default function TasksScreen() {
@@ -74,9 +74,13 @@ export default function TasksScreen() {
         {item.category ? <Text style={[styles.caption, { color: colors.muted }]}>{item.category}</Text> : null}
         <View style={styles.actions}>
           {!item.completed && (
-            <Button title="Complete" onPress={() => handleComplete(item.id)} color={colors.accent} />
+            <Pressable onPress={() => handleComplete(item.id)} style={[styles.actionButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Complete ${item.title}`}>
+              <Text style={styles.actionButtonText}>Complete</Text>
+            </Pressable>
           )}
-          <Button title="Delete" onPress={() => handleDelete(item.id)} color={colors.highlight} />
+          <Pressable onPress={() => handleDelete(item.id)} style={[styles.actionButton, { backgroundColor: colors.highlight }]} accessibilityRole="button" accessibilityLabel={`Delete ${item.title}`}>
+            <Text style={styles.actionButtonText}>Delete</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -87,26 +91,28 @@ export default function TasksScreen() {
       <View style={styles.form}>
         <TextInput
           style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Task title"
+          placeholder="What do you need to do?"
           placeholderTextColor={colors.muted}
           value={title}
           onChangeText={setTitle}
         />
         <TextInput
           style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Description"
+          placeholder="Add a few details"
           placeholderTextColor={colors.muted}
           value={description}
           onChangeText={setDescription}
         />
         <TextInput
           style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Category"
+          placeholder="Category, e.g. Homework, Club, Wellness"
           placeholderTextColor={colors.muted}
           value={category}
           onChangeText={setCategory}
         />
-        <Button title="Add task" onPress={handleAdd} color={colors.accent} />
+        <Pressable onPress={handleAdd} style={[styles.addButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Add new task">
+          <Text style={styles.addButtonText}>Add task</Text>
+        </Pressable>
       </View>
 
       {loading && tasks.length === 0 ? (
@@ -135,4 +141,8 @@ const styles = StyleSheet.create({
   caption: { ...typography.caption },
   badge: { ...typography.caption },
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  actionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12 },
+  actionButtonText: { color: colors.white, fontWeight: '700' },
+  addButton: { paddingVertical: spacing.md, borderRadius: 16, alignItems: 'center' },
+  addButtonText: { color: colors.white, fontWeight: '700' },
 });

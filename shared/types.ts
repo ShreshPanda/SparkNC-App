@@ -24,6 +24,17 @@ export interface Role {
   updatedAt: string;
 }
 
+export interface SchoolIdentity {
+  id: string;
+  name: string;
+  slug: string;
+  city?: string;
+  country?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  mascot?: string;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -372,6 +383,7 @@ export interface GrowthStatistics {
   achievementsUnlocked: number;
   totalAchievements: number;
   categories: GrowthStatistic[];
+  observations: string[];
 }
 
 export interface GrowthStory {
@@ -379,6 +391,15 @@ export interface GrowthStory {
   summary: string;
   paragraphs: string[];
   milestones: string[];
+}
+
+export interface OpportunityRecommendation {
+  id: string;
+  title: string;
+  category: 'leadership' | 'volunteer' | 'event' | 'club' | 'workshop' | 'competition' | 'community';
+  score: number;
+  reason: string;
+  action: string;
 }
 
 export interface AICompanionOutput {

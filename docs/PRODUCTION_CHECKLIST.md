@@ -15,25 +15,27 @@ Use this checklist before declaring SparkNC production ready.
 
 ## D1 creation and binding
 
-- [ ] D1 database created: `npx wrangler d1 create sparknc-db`.
+- [ ] Dedicated SparkNC D1 database created: `npx wrangler d1 create <new-sparknc-production-database-name>`.
 - [ ] `database_name` and `database_id` in `wrangler.jsonc` replaced with real values.
 - [ ] D1 binding name in code matches `DB`.
 
 ## Migration execution
 
-- [ ] `001_initial.sql` applied.
-- [ ] `002_sessions.sql` applied.
-- [ ] `003_passwords.sql` applied.
-- [ ] `004_gamification.sql` applied.
-- [ ] No migration errors reported by Wrangler.
+- [ ] `npm run verify` and `npm run check:deployment` pass.
+- [ ] The dedicated production D1 name and ID replace only the production placeholders in `wrangler.jsonc`.
+- [ ] `node scripts/apply-d1-migrations.mjs <production-database-name> remote` reports migrations `001` through `020` applied.
+- [ ] No migration errors are reported by Wrangler.
+- [ ] A D1 export or backup procedure has been confirmed before the migration window.
 
 ## Environment variables
 
 - [ ] `.env` created from `.env.example` for the frontend.
 - [ ] `.dev.vars` created from `.dev.vars.example` for local backend.
 - [ ] `SESSION_SECRET` set in Cloudflare dashboard or via `wrangler secret put`.
-- [ ] `BETTER_AUTH_SECRET` set if compatibility mode is used.
-- [ ] `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` set to the deployed Worker URL.
+- [ ] `BETTER_AUTH_SECRET` set as a production Worker secret.
+- [ ] `BETTER_AUTH_URL` is the deployed HTTPS Worker URL in `wrangler.jsonc`.
+- [ ] `ALLOWED_ORIGINS` contains only exact approved HTTPS web origins.
+- [ ] `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` is set to the deployed Worker URL for the frontend build.
 - [ ] No secrets committed to the repository.
 
 ## HTTPS verification
@@ -65,11 +67,12 @@ Use this checklist before declaring SparkNC production ready.
 
 ## Deployment verification
 
-- [ ] `npx wrangler deploy` completes without errors.
-- [ ] `npx wrangler d1 migrations apply` reports all migrations applied.
+- [ ] `npm run deploy:dry-run` completes before any deployment.
+- [ ] `npm run deploy:worker` completes without errors and its Worker version ID is recorded.
+- [ ] `node scripts/check-worker-health.mjs https://<worker-domain>` passes.
 - [ ] Frontend builds with `npx expo export --platform web`.
 - [ ] Frontend `EXPO_PUBLIC_CLOUDFLARE_WORKER_URL` points to the deployed Worker.
-- [ ] End-to-end register, login, create task, and complete task flows tested.
+- [ ] `docs/PRODUCTION_VERIFICATION.md` is completed, including role-based access and core pilot flows.
 
 ## Post-deployment
 

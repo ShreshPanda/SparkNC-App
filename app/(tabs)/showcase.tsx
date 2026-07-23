@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Button, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {  ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { EmptyState } from '../../components/EmptyState';
 import { FadeIn } from '../../components/AnimatedWrapper';
@@ -50,7 +51,7 @@ export default function ShowcaseScreen() {
       <AppShell title="SparkNC Showcase">
         <EmptyState title="Showcase unavailable" message={error ?? 'No demo data loaded.'} icon="sad-outline" />
         <View style={styles.retry}>
-          <Button title="Retry" onPress={load} color={colors.accent} />
+          <SparkButton title="Retry" onPress={load} variant="primary" />
         </View>
       </AppShell>
     );

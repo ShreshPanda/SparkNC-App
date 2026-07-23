@@ -744,3 +744,106 @@ Transform SparkNC from a powerful internal platform into a production-quality ec
 - Run `docs/LOAD_TESTING.md` 100/500/1000-user staging validation.
 - Build, deploy, and conduct the leadership demo.
 
+## RC1 Production Audit — 2026-07-20
+
+### Verified
+- Root Expo TypeScript check passes.
+- Worker TypeScript check passes.
+- Worker Vitest suite passes: 2 files, 5 tests.
+- README merge conflict, route registration gaps, nested imports, onboarding wiring, Worker typing issues, and stale migration references were remediated.
+- Added `REPOSITORY_AUDIT.md`, `DEPENDENCY_AUDIT.md`, `DATABASE_AUDIT.md`, `API_AUDIT.md`, `FRONTEND_AUDIT.md`, `SECURITY_REPORT.md`, `PERFORMANCE_REPORT.md`, `DOCUMENTATION_AUDIT.md`, `RC1_TEST_REPORT.md`, and `RC1_RELEASE_CHECKLIST.md`.
+
+### RC1 blockers
+- D1 placeholders still prevent local/staging migration execution.
+- CORS policy, durable rate limits, production secrets, permission seeds, and staging smoke tests remain incomplete.
+- Observability persistence, device accessibility, and load testing are not yet evidenced.
+- Dependency audit reports 13 moderate transitive Expo vulnerabilities; remediation requires a major SDK upgrade and is deferred.
+
+### Recommendation
+- Do not promote RC1 to RC2 until `RC1_RELEASE_CHECKLIST.md` is complete.
+
+## RC2 First Cloudflare Deployment — 2026-07-21
+
+### Completed
+- Bound the existing `sparknc-production` D1 database to the primary `DB` binding in `wrangler.jsonc`.
+- Updated production `BETTER_AUTH_URL` to `https://sparknc-api.shreshpanda.workers.dev`.
+- Set `ALLOWED_ORIGINS` to local development origins (`http://localhost:19006`, `http://localhost:8081`, `http://localhost:3000`) because no production frontend URL has been deployed yet.
+- Removed the duplicate `env.sparknc_production` D1 binding; only `env.DB` remains.
+- Regenerated `worker-configuration.d.ts` and verified it is current.
+- Redeployed the `sparknc-api` Worker to `https://sparknc-api.shreshpanda.workers.dev` (Version ID: `f3ab077e-5e91-4255-81db-1f6d3c7c0edf`).
+- Set valid `SESSION_SECRET` and `BETTER_AUTH_SECRET` Worker secrets.
+
+### Verified
+- `npm run verify` passed.
+- `npm run check:deployment` passed.
+- `npx wrangler types --check` passed.
+- `npm run health:check -- https://sparknc-api.shreshpanda.workers.dev` passed: `/health` reports `status: ok`, `database: connected`, `version: 1.0.0-rc2`.
+- Authentication smoke test passed: `POST /auth/register`, `POST /auth/login`, and `GET /auth/me` all return expected user data.
+- Production session cookie is `HttpOnly`, `SameSite=Strict`, `Secure`, and has `Max-Age`.
+
+### Remaining manual steps
+- Deploy the Expo frontend to a production HTTPS origin.
+- Replace `ALLOWED_ORIGINS` in `wrangler.jsonc` with the exact production frontend URL once it exists, then redeploy.
+- Seed required role permissions (`pilot.*`, `community.moderate.*`, `ambassador.support.*`, `admin.executive.view`, `admin.pilot.view`) before pilot access.
+- Complete staging validation and load testing before promoting to broader pilot use.
+
+## Launch Pass 1 — "Ready for the Stage" (in progress)
+
+### Completed
+- Replaced hardcoded hex colors in `components/EmptyState.tsx`, `components/ProgressRing.tsx`, `components/SparkCard.tsx`, and across 15+ tab/auth screens.
+- Created `components/SparkButton.tsx` and replaced all native `Button` usages across tab screens; added tactile press-scale animation.
+- Fixed invisible `EmptyState` action button text.
+- Standardized `AppShell` titles in `ambassador.tsx`, `analytics.tsx`, and `signup.tsx`.
+- Added `info` and `creative` base color tokens to `theme/colors.ts`.
+- Polished `EmptyState` copy and `TextInput` placeholders across dashboard, admin, calendar, tasks, goals, messages, feedback, and ambassador-feedback.
+- Added `accessibilityRole` and `accessibilityLabel` to primary actions in `notifications.tsx`, `calendar.tsx`, `admin.tsx`, `tasks.tsx`, `goals.tsx`, and `ambassador.tsx`.
+- Added screen-reader props to `SparkButton` and `EmptyState`.
+- Removed unused `services/syncService.ts`.
+- Created `docs/LP1_REPORT.md` and `docs/RELEASE_READINESS_REPORT.md`.
+- `npm run typecheck`, `npm run typecheck:worker`, and `npm run test:worker` pass.
+
+### Remaining
+- PHASE 6: Presentation mode sizing, typography, chart readability, projector contrast, and navigation hiding.
+- PHASE 8: Leadership clarity pass over admin, analytics, impact, and progress dashboards.
+- PHASE 9: Full architecture cleanup (duplicate helpers/interfaces, dead exports).
+- PHASE 10: End-to-end release-candidate walkthrough by student/ambassador/admin/leadership roles.
+
+## Sprint 10 — "The Complete Spark" v1.0 (in progress)
+
+### Completed
+- **Student Home Experience 2.0**: `dashboard.tsx` now generates personalized `TodaysSpark` insights from real tasks, goals, events, opportunities, streak, and XP; greeting is time-aware.
+- **Growth Timeline 3.0**: `growth.tsx` uses `SparkButton` CTAs for `Generate Timeline` and `Refresh Timeline`.
+- **AI Companion 2.0**: `ai.tsx` greets the user by first name and uses a coach-like subtitle; insight cards and send button are accessible.
+- **Premium Experience Pass**: `TodaysSpark` insights fade in smoothly; `SparkButton` press-scale animation already in place.
+- `npm run typecheck`, `npm run typecheck:worker`, and `npm run test:worker` pass.
+
+### Remaining
+- PHASE 4: Student Portfolio Evolution.
+- PHASE 5: Ambassador Command Center 2.0.
+- PHASE 6: Leadership Experience 2.0.
+- PHASE 7: Community Experience Refinement.
+- PHASE 8: Demo Experience Mode.
+- PHASE 10: Full role walkthroughs (student, ambassador, admin, leadership).
+- PHASE 11: `SPARKNC_V1_RELEASE_REPORT.md` and final release docs.
+
+## Sprint 10 Part 2 — "The Spark That Stays" (in progress)
+
+### Completed
+- **Demo Experience Mode**: `app/(tabs)/_layout.tsx` hides bottom tab bar in Presentation Mode; `components/AppShell.tsx` shows a non-intrusive "Demo mode" pill, larger title, and extra padding for projector displays.
+- **Premium UX Review**: Fixed remaining hardcoded `#ffffff` in `app/onboarding.tsx`; no `TODO`/`FIXME`/`HACK`/`XXX` markers in `app/`, `components/`, or `services/`; no native `Button` imports in `app/`.
+- **Accessibility & Inclusivity**: `app/(auth)/login.tsx` and `app/(auth)/signup.tsx` CTAs/links now expose `accessibilityRole` and `accessibilityLabel`.
+- **Release Candidate Review**: Verified no obvious hardcoded colors, leftover markers, or native `Button` usages in frontend.
+- **Final Documentation**: `docs/SPARKNC_V1_PRODUCT_REVIEW.md` created; `CHANGELOG.md`, `PROJECT_STATUS.md`, `SPRINT_STATE.md`, and `NEXT_TASK.md` updated.
+- `npm run typecheck`, `npm run typecheck:worker`, and `npm run test:worker` pass.
+
+### Completed in this pass
+- **Portfolio evolution**: `portfolio.tsx` hero, icon sections, count pills, tag-style skills/badges.
+- **Ambassador experience**: `ambassador.tsx` "Today's focus" summary, status pills, sorted students, richer actions.
+- **Leadership command center**: `analytics.tsx`, `impact.tsx`, `progress.tsx` hero KPI tiles, `SparkCard` sections, clearer trends.
+- **Community refinement**: `messages.tsx` and `feedback.tsx` `SparkCard`, `SparkButton`, `Ionicons`, `FadeIn`, empty states.
+- **Emotional experience review**: `docs/EMOTIONAL_REVIEW.md` created; feelings mapped for all major screens.
+- **Full role walkthrough validation**: `docs/ROLE_WALKTHROUGH.md` created; all role journeys verified.
+
+### Remaining
+- Deployment blockers (production origin, `ALLOWED_ORIGINS`, role permissions, staging validation) per `PROJECT_STATUS.md`.
+

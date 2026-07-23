@@ -22,7 +22,7 @@ export class AmbassadorRepository extends BaseRepository {
 
   async getAssignedStudents(ambassadorId: string): Promise<AssignedStudentRecord[]> {
     const result = await this.db
-      .prepare('SELECT u.id, u.name, u.email, u.school_id, u.last_active FROM users u JOIN ambassador_assignments a ON a.student_id = u.id WHERE a.ambassador_id = ? ORDER BY u.last_active DESC')
+      .prepare('SELECT u.id, u.name, u.email, u.school_id, u.last_activity_at as last_active FROM users u JOIN ambassador_assignments a ON a.student_id = u.id WHERE a.ambassador_id = ? ORDER BY u.last_activity_at DESC')
       .bind(ambassadorId)
       .all();
     return (result.results ?? []).map((row) => ({

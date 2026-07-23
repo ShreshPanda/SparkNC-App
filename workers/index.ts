@@ -5,8 +5,18 @@ import { createAuthContext } from './api/middleware/auth';
 import { createLogger } from './api/services/logger';
 import { AuditLogService } from './api/services/auditLogService';
 import { AuditLogRepository } from './api/repositories/AuditLogRepository';
+import { RateLimitMiddleware } from './api/middleware/rateLimit';
+import { createCorsResponse, isAllowedOrigin, withCors } from './api/middleware/cors';
+import { MetricsRepository } from './api/repositories/MetricsRepository';
+import { ObservabilityService } from './api/services/ObservabilityService';
 
 declare const crypto: Crypto;
+
+interface WorkerExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+const rateLimitMiddleware = new RateLimitMiddleware();
 
 export interface Env {
   BETTER_AUTH_SECRET?: string;
@@ -20,6 +30,7 @@ export interface Env {
   ENVIRONMENT?: string;
   COOKIE_SAMESITE?: string;
   COOKIE_SECURE?: string;
+  ALLOWED_ORIGINS?: string;
   DB?: {
     prepare: (query: string) => {
       bind: (...values: unknown[]) => {
@@ -32,11 +43,26 @@ export interface Env {
 
 function validateEnv(env: Env): string[] {
   const errors: string[] = [];
+  const environment = env.ENVIRONMENT ?? 'unknown';
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     errors.push('Missing DB binding. Add a D1 database named DB in wrangler.jsonc and deploy.');
   }
-  if (!env.SESSION_SECRET || String(env.SESSION_SECRET).length < 16) {
-    errors.push('Missing or too short SESSION_SECRET. Set it as a Worker secret with at least 16 characters.');
+  if (!env.SESSION_SECRET || String(env.SESSION_SECRET).length < 32) {
+    errors.push('Missing or too short SESSION_SECRET. Set it as a Worker secret with at least 32 characters.');
+  }
+  if (environment === 'production') {
+    if (!env.BETTER_AUTH_SECRET || String(env.BETTER_AUTH_SECRET).length < 32) {
+      errors.push('Missing or too short BETTER_AUTH_SECRET. Set it as a Worker secret with at least 32 characters.');
+    }
+    if (!env.BETTER_AUTH_URL || !/^https:\/\//.test(env.BETTER_AUTH_URL)) {
+      errors.push('Missing or invalid BETTER_AUTH_URL. Set it to the production HTTPS Worker URL.');
+    }
+    if (env.COOKIE_SECURE !== 'true') {
+      errors.push('COOKIE_SECURE must be true in production.');
+    }
+    if (!env.ALLOWED_ORIGINS || env.ALLOWED_ORIGINS.includes('<')) {
+      errors.push('Missing ALLOWED_ORIGINS. Configure a comma-separated list of approved HTTPS web origins.');
+    }
   }
   return errors;
 }
@@ -122,6 +148,15 @@ function getResourceTypeFromPath(pathname: string): string | undefined {
   return first.replace(/s$/, '');
 }
 
+function errorStatus(code?: string): number {
+  if (code === 'UNAUTHORIZED') return 401;
+  if (code === 'FORBIDDEN') return 403;
+  if (code === 'NOT_FOUND') return 404;
+  if (code === 'CONFLICT') return 409;
+  if (code === 'RATE_LIMIT') return 429;
+  return 400;
+}
+
 function extractSetCookie(payload: unknown): { setCookie?: string; data: unknown } {
   if (payload && typeof payload === 'object' && !Array.isArray(payload) && !(payload instanceof Response) && 'setCookie' in payload) {
     const record = payload as Record<string, unknown>;
@@ -135,13 +170,39 @@ function extractSetCookie(payload: unknown): { setCookie?: string; data: unknown
 }
 
 export default {
-  async fetch(request: Request, env: Env) {
+  async fetch(request: Request, env: Env, executionCtx: WorkerExecutionContext) {
     const logger = createLogger({ ENVIRONMENT: env.ENVIRONMENT });
     const requestId = generateRequestId();
     const timestamp = new Date().toISOString();
+    const startedAt = Date.now();
     const url = new URL(request.url);
     const router = createApiRouter();
-    const auth = createBetterAuthService();
+    const auth = createBetterAuthService(env);
+    const observability = env.DB ? new ObservabilityService(new MetricsRepository(env.DB)) : undefined;
+    const complete = (response: Response, userId?: string): Response => {
+      const headers = new Headers(response.headers);
+      headers.set('X-Request-Id', requestId);
+      const finalized = withCors(new Response(response.body, { status: response.status, statusText: response.statusText, headers }), request, env.ALLOWED_ORIGINS);
+      if (observability) {
+        executionCtx.waitUntil(
+          observability.logRequest({
+            requestId,
+            method: request.method,
+            path: url.pathname,
+            statusCode: finalized.status,
+            durationMs: Date.now() - startedAt,
+            userId,
+          }).catch((error) => logger.error('Failed to persist request metric', { requestId, message: error instanceof Error ? error.message : 'unknown error' })),
+        );
+      }
+      return finalized;
+    };
+
+    const corsResponse = createCorsResponse(request, env.ALLOWED_ORIGINS);
+    if (corsResponse) return complete(corsResponse);
+    if (!isAllowedOrigin(request, env.ALLOWED_ORIGINS)) {
+      return complete(Response.json(createErrorResponse({ message: 'Origin is not allowed', code: 'CORS_ORIGIN_DENIED' }, requestId, timestamp), { status: 403 }));
+    }
 
     logger.info('Incoming request', { method: request.method, path: url.pathname, requestId });
 
@@ -149,28 +210,33 @@ export default {
 
     if (url.pathname === '/health') {
       const health = await healthController(env.DB, envErrors);
-      return Response.json(createSuccessResponse({ ...health, routes: router.routes.length, authConfigured: auth.isConfigured }, requestId, timestamp));
+      return complete(Response.json(createSuccessResponse({ ...health, routes: router.routes.length, authConfigured: auth.isConfigured }, requestId, timestamp)));
     }
 
     if (url.pathname === '/version') {
-      return Response.json(createSuccessResponse(versionController(), requestId, timestamp));
+      return complete(Response.json(createSuccessResponse(versionController(), requestId, timestamp)));
     }
 
     if (url.pathname === '/status') {
       const status = await statusController(env.DB, envErrors, env, auth.isConfigured, router.routes.length);
-      return Response.json(createSuccessResponse(status, requestId, timestamp));
+      return complete(Response.json(createSuccessResponse(status, requestId, timestamp)));
     }
 
     if (envErrors.length > 0) {
       logger.error('Environment validation failed', { requestId, envErrors });
       const message = envErrors.join('; ');
-      return Response.json(createErrorResponse({ message, code: 'INVALID_CONFIG' }, requestId, timestamp), { status: 503 });
+      return complete(Response.json(createErrorResponse({ message, code: 'INVALID_CONFIG' }, requestId, timestamp), { status: 503 }));
+    }
+
+    const rateLimitResponse = rateLimitMiddleware.handle(request);
+    if (rateLimitResponse) {
+      return complete(await standardizeControllerResponse(rateLimitResponse, requestId, timestamp));
     }
 
     const match = matchRoute(url.pathname, request.method);
     if (!match) {
       logger.warn('Route not found', { requestId, path: url.pathname, method: request.method });
-      return Response.json(createErrorResponse({ message: 'Route not found', code: 'NOT_FOUND' }, requestId, timestamp), { status: 404 });
+      return complete(Response.json(createErrorResponse({ message: 'Route not found', code: 'NOT_FOUND' }, requestId, timestamp), { status: 404 }));
     }
 
     let input: unknown = undefined;
@@ -219,7 +285,18 @@ export default {
 
       if (responsePayload instanceof Response) {
         logger.warn('Controller returned raw Response; standardizing', { requestId, path: url.pathname });
-        return await standardizeControllerResponse(responsePayload, requestId, timestamp);
+        return complete(await standardizeControllerResponse(responsePayload, requestId, timestamp), authContext.userId);
+      }
+
+      if (responsePayload && typeof responsePayload === 'object' && 'ok' in responsePayload && (responsePayload as { ok?: unknown }).ok === false) {
+        const payload = responsePayload as { code?: string; message?: string };
+        return complete(
+          Response.json(
+            createErrorResponse({ message: payload.message ?? 'Request failed', code: payload.code ?? 'BAD_REQUEST' }, requestId, timestamp),
+            { status: errorStatus(payload.code) },
+          ),
+          authContext.userId,
+        );
       }
 
       const { setCookie, data } = extractSetCookie(responsePayload);
@@ -228,14 +305,20 @@ export default {
       if (setCookie) responseHeaders.set('Set-Cookie', setCookie);
 
       logger.info('Request completed', { requestId, path: url.pathname, method: request.method });
-      return new Response(JSON.stringify(createSuccessResponse(data, requestId, timestamp)), {
-        status: 200,
-        headers: responseHeaders,
-      });
+      return complete(
+        new Response(JSON.stringify(createSuccessResponse(data, requestId, timestamp)), {
+          status: responseStatus,
+          headers: responseHeaders,
+        }),
+        authContext.userId,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error';
       logger.error('Request failed', { requestId, path: url.pathname, method: request.method, message });
-      return Response.json(createErrorResponse({ message, code: 'INTERNAL_ERROR' }, requestId, timestamp), { status: 500 });
+      if (observability) {
+        executionCtx.waitUntil(observability.logError(requestId, request.method, url.pathname, message).catch(() => undefined));
+      }
+      return complete(Response.json(createErrorResponse({ message: 'Internal server error', code: 'INTERNAL_ERROR' }, requestId, timestamp), { status: 500 }));
     }
   },
 };

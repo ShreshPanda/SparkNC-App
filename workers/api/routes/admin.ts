@@ -18,12 +18,12 @@ export function createAdminRoutes() {
     {
       method: 'POST',
       path: '/admin/events',
-      handler: requirePermission('admin.events.create', (_params: Record<string, string> | undefined, input: unknown, _context: any) => createAdminEventController(input as any)),
+      handler: requirePermission('admin.events.create', (_params: Record<string, string> | undefined, input: unknown, context: any) => createAdminEventController(input as any, context)),
     },
     {
       method: 'POST',
       path: '/admin/announcements',
-      handler: requirePermission('admin.announcements.create', (_params: Record<string, string> | undefined, input: unknown, _context: any) => createAnnouncementController(input as any)),
+      handler: requirePermission('admin.announcements.create', (_params: Record<string, string> | undefined, input: unknown, context: any) => createAnnouncementController(input as any, context)),
     },
     {
       method: 'GET',

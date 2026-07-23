@@ -47,6 +47,7 @@ export class EventRepository extends BaseRepository {
     try {
       const result = await this.db
         .prepare('SELECT id, title, description, location, starts_at, ends_at, created_by, school_id, created_at, updated_at FROM events ORDER BY starts_at ASC')
+        .bind()
         .all();
       return (result.results ?? []).map((row) => this.mapRow(row));
     } catch (error) {

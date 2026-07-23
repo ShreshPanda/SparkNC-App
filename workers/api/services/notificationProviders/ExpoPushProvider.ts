@@ -39,7 +39,7 @@ export class ExpoPushProvider implements NotificationProvider {
         body,
       });
 
-      const json = await response.json<{ data?: { id?: string; status?: string; message?: string }[]; errors?: { message: string }[] }>();
+      const json = await response.json() as { data?: { id?: string; status?: string; message?: string }[]; errors?: { message: string }[] };
 
       if (!response.ok || json.errors?.length) {
         return { success: false, error: json.errors?.[0]?.message ?? `Expo push failed: ${response.status}` };

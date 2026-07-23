@@ -76,12 +76,12 @@ export class GrowthTimelineRepository extends BaseRepository {
 
   async getStreakMilestones(userId: string): Promise<{ streak: number; recordedAt: string }[]> {
     const result = await this.db
-      .prepare('SELECT streak_longest, created_at FROM users WHERE id = ? LIMIT 1')
+      .prepare('SELECT longest_streak, created_at FROM users WHERE id = ? LIMIT 1')
       .bind(userId)
       .all();
     const row = result.results?.[0];
     if (!row) return [];
-    const streak = Number(row.streak_longest ?? 0);
+    const streak = Number(row.longest_streak ?? 0);
     const milestones: { streak: number; recordedAt: string }[] = [];
     const recordedAt = String(row.created_at ?? this.now());
     [7, 30, 60, 100].forEach((m) => {
@@ -92,12 +92,12 @@ export class GrowthTimelineRepository extends BaseRepository {
 
   async getXPMilestones(userId: string): Promise<{ xp: number; recordedAt: string }[]> {
     const result = await this.db
-      .prepare('SELECT xp, created_at FROM users WHERE id = ? LIMIT 1')
+      .prepare('SELECT xp_total, created_at FROM users WHERE id = ? LIMIT 1')
       .bind(userId)
       .all();
     const row = result.results?.[0];
     if (!row) return [];
-    const xp = Number(row.xp ?? 0);
+    const xp = Number(row.xp_total ?? 0);
     const level = Math.floor(xp / 100) + 1;
     const milestones: { xp: number; recordedAt: string }[] = [];
     const recordedAt = String(row.created_at ?? this.now());

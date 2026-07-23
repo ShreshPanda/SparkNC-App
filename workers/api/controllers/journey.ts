@@ -12,11 +12,12 @@ function createService(context?: JourneyControllerContext) {
   return new SparkJourneyService(new JourneyRepository(db));
 }
 
-export async function getJourneyController(input: { year?: number; semester?: 'fall' | 'spring' | 'summer'; category?: string }, context?: JourneyControllerContext) {
+export async function getJourneyController(input: { year?: number; semester?: 'fall' | 'spring' | 'summer'; category?: string } | undefined, context?: JourneyControllerContext) {
   const userId = context?.userId;
   if (!userId) return { ok: false, code: 'UNAUTHORIZED', message: 'Unauthorized' };
   const service = createService(context);
-  const category = input.category as JourneyEvent['category'] | undefined;
-  const journey = await service.getJourney(userId, { year: input.year, semester: input.semester, category });
+  const safeInput = input ?? {};
+  const category = safeInput.category as JourneyEvent['category'] | undefined;
+  const journey = await service.getJourney(userId, { year: safeInput.year, semester: safeInput.semester, category });
   return { ok: true, journey };
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { useTheme } from '../providers/ThemeProvider';
-import { spacing } from '../theme';
+import { colors as baseColors, spacing } from '../theme';
 
 export function SparkCard({ children, style, ...rest }: ViewProps) {
   const { colors } = useTheme();
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.lg,
     gap: spacing.sm,
-    shadowColor: '#000',
+    shadowColor: baseColors.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,

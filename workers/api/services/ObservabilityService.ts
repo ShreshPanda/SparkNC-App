@@ -17,8 +17,9 @@ export class ObservabilityService {
   }
 
   async logRequest(metric: RequestMetric) {
+    const createdAt = new Date().toISOString();
     const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    return this.metrics.recordRequest({
+    await this.metrics.recordRequest({
       id,
       request_id: metric.requestId,
       method: metric.method,
@@ -26,8 +27,19 @@ export class ObservabilityService {
       status_code: metric.statusCode,
       duration_ms: metric.durationMs,
       user_id: metric.userId ?? null,
-      created_at: new Date().toISOString(),
+      created_at: createdAt,
     });
+
+    if (metric.durationMs > this.slowThresholdMs) {
+      await this.metrics.recordSlowQuery({
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        operation: `HTTP ${metric.method}`,
+        query: metric.path,
+        duration_ms: metric.durationMs,
+        request_id: metric.requestId,
+        created_at: createdAt,
+      });
+    }
   }
 
   async logError(requestId: string, method: string, path: string, message: string) {

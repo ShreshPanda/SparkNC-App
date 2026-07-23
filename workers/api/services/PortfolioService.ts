@@ -9,6 +9,9 @@ export interface PortfolioSummary {
   certificates: PortfolioRecord[];
   leadership: PortfolioRecord[];
   community: PortfolioRecord[];
+  volunteer: PortfolioRecord[];
+  badges: PortfolioRecord[];
+  reflections: PortfolioRecord[];
   xp: number;
   streak: number;
 }
@@ -30,6 +33,9 @@ export class PortfolioService {
       certificates: byType('certificate'),
       leadership: byType('community').filter((r) => r.metadata?.includes('leader')),
       community: byType('community'),
+      volunteer: byType('volunteer'),
+      badges: byType('badge'),
+      reflections: byType('reflection'),
       xp,
       streak,
     };

@@ -75,8 +75,10 @@ export default function CalendarScreen() {
                   <Pressable
                     onPress={() => rsvp(item.id)}
                     style={[styles.button, { backgroundColor: item.isRegistered ? colors.muted : colors.accent }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.isRegistered ? 'Registered for event' : `RSVP to ${item.title}`}
                   >
-                    <Text style={{ color: '#fff' }}>{item.isRegistered ? 'Registered' : 'RSVP'}</Text>
+                    <Text style={{ color: colors.foreground }}>{item.isRegistered ? 'Registered' : 'RSVP'}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -89,35 +91,35 @@ export default function CalendarScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Create Event</Text>
           <TextInput
-            placeholder="Title"
+            placeholder="Event title"
             placeholderTextColor={colors.muted}
             value={form.title}
             onChangeText={(text) => setForm((f) => ({ ...f, title: text }))}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
           <TextInput
-            placeholder="Start (ISO)"
+            placeholder="Start time, e.g. 2024-12-31T09:00"
             placeholderTextColor={colors.muted}
             value={form.startsAt}
             onChangeText={(text) => setForm((f) => ({ ...f, startsAt: text }))}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
           <TextInput
-            placeholder="End (ISO, optional)"
+            placeholder="End time (optional)"
             placeholderTextColor={colors.muted}
             value={form.endsAt}
             onChangeText={(text) => setForm((f) => ({ ...f, endsAt: text }))}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
           <TextInput
-            placeholder="Location"
+            placeholder="Location or room"
             placeholderTextColor={colors.muted}
             value={form.location}
             onChangeText={(text) => setForm((f) => ({ ...f, location: text }))}
             style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <Pressable onPress={create} style={[styles.button, { backgroundColor: colors.accent }]}>
-            <Text style={{ color: '#fff' }}>Create</Text>
+          <Pressable onPress={create} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Create new event">
+            <Text style={{ color: colors.foreground }}>Create</Text>
           </Pressable>
         </View>
       </ScrollView>

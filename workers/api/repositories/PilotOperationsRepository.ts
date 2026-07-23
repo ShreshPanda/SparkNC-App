@@ -20,22 +20,22 @@ export class PilotOperationsRepository extends BaseRepository {
 
   async dailyActiveUsers(days = 30): Promise<{ date: string; count: number }[]> {
     const { results } = await this.db
-      .prepare('SELECT date(created_at) as day, COUNT(DISTINCT user_id) as count FROM activity_logs WHERE created_at > datetime("now", ?) GROUP BY day ORDER BY day')
+      .prepare('SELECT date(occurred_at) as day, COUNT(DISTINCT user_id) as count FROM growth_events WHERE occurred_at > datetime("now", ?) GROUP BY day ORDER BY day')
       .bind(`-${days} days`)
       .all();
     return (results ?? []).map((row) => ({ date: String(row.day ?? ''), count: Number(row.count ?? 0) }));
   }
 
   async monthlyActiveUsers(): Promise<number> {
-    return this.scalar('SELECT COUNT(DISTINCT user_id) FROM activity_logs WHERE created_at > datetime("now", "-30 days")');
+    return this.scalar('SELECT COUNT(DISTINCT user_id) FROM growth_events WHERE occurred_at > datetime("now", "-30 days")');
   }
 
   async taskCompletions(days = 30): Promise<number> {
-    return this.scalar('SELECT COUNT(*) FROM tasks WHERE completed = 1 AND completed_at > datetime("now", ?)', `-${days} days`);
+    return this.scalar('SELECT COUNT(*) FROM tasks WHERE completed = 1 AND updated_at > datetime("now", ?)', `-${days} days`);
   }
 
   async goalCompletions(days = 30): Promise<number> {
-    return this.scalar('SELECT COUNT(*) FROM goals WHERE completed = 1 AND completed_at > datetime("now", ?)', `-${days} days`);
+    return this.scalar('SELECT COUNT(*) FROM goals WHERE completed = 1 AND updated_at > datetime("now", ?)', `-${days} days`);
   }
 
   async eventsAttended(days = 30): Promise<number> {
@@ -51,23 +51,25 @@ export class PilotOperationsRepository extends BaseRepository {
   }
 
   async aiInteractions(days = 30): Promise<number> {
-    return this.scalar('SELECT COUNT(*) FROM ai_memory WHERE created_at > datetime("now", ?)', `-${days} days`);
+    return this.scalar('SELECT COUNT(*) FROM ai_memories WHERE created_at > datetime("now", ?)', `-${days} days`);
   }
 
   async featureUsage(feature: string, days = 30): Promise<number> {
-    return this.scalar('SELECT COUNT(*) FROM activity_logs WHERE action = ? AND created_at > datetime("now", ?)', feature, `-${days} days`);
+    return this.scalar('SELECT COUNT(*) FROM growth_events WHERE event_type = ? AND occurred_at > datetime("now", ?)', feature, `-${days} days`);
   }
 
   async averageStreak(): Promise<number> {
     const { results } = await this.db
       .prepare('SELECT AVG(current_streak) as avg FROM users WHERE current_streak IS NOT NULL')
+      .bind()
       .all();
     return Number((results[0] ?? {}).avg ?? 0);
   }
 
   async averageXP(): Promise<number> {
     const { results } = await this.db
-      .prepare('SELECT AVG(xp) as avg FROM users WHERE xp IS NOT NULL')
+      .prepare('SELECT AVG(xp_total) as avg FROM users WHERE xp_total IS NOT NULL')
+      .bind()
       .all();
     return Math.round(Number((results[0] ?? {}).avg ?? 0));
   }
@@ -75,7 +77,8 @@ export class PilotOperationsRepository extends BaseRepository {
   async satisfactionScore(): Promise<number> {
     const { results } = await this.db
       .prepare('SELECT AVG(rating) as avg FROM student_feedback WHERE rating IS NOT NULL AND created_at > datetime("now", "-30 days")')
+      .bind()
       .all();
-    return Number(((results[0] ?? {}).avg ?? 0).toFixed(1));
+    return Number(Number((results[0] ?? {}).avg ?? 0).toFixed(1));
   }
 }

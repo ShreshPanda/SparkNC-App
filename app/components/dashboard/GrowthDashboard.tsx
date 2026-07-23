@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AppShell } from '../AppShell';
-import { useTheme } from '../../providers/ThemeProvider';
-import { authService, type AuthSession } from '../../services/authService';
-import { cloudflareService } from '../../services/cloudflareService';
-import { spacing, typography } from '../../theme';
+import { AppShell } from '../../../components/AppShell';
+import { useTheme } from '../../../providers/ThemeProvider';
+import { authService, type AuthSession } from '../../../services/authService';
+import { cloudflareService } from '../../../services/cloudflareService';
+import { spacing, typography } from '../../../theme';
 import { ProgressRing } from './ProgressRing';
 import { StatsWidget } from './StatsWidget';
 import { HeatmapWidget } from './HeatmapWidget';
 import { AchievementCarousel } from './AchievementCarousel';
-import type { Event, Goal, Task } from '../../shared/types';
+import type { Event, Goal, Task } from '../../../shared/types';
 
 export function GrowthDashboard() {
   const { colors } = useTheme();

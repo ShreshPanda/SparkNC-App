@@ -4,17 +4,18 @@ Use this checklist after every deployment to verify production readiness.
 
 ## Pre-deployment
 
-- [ ] `wrangler.jsonc` is committed and points to the correct `database_id`.
-- [ ] `compatibility_date` is set and not expired.
+- [ ] `npm run verify` and `npm run check:deployment` pass.
+- [ ] `wrangler.jsonc` has only the dedicated SparkNC target database ID and exact approved origin values.
 - [ ] `SESSION_SECRET` and `BETTER_AUTH_SECRET` are set as secrets.
-- [ ] `EXPO_ACCESS_TOKEN` is set if push notifications are enabled.
-- [ ] All migrations through the latest are applied to the target D1 database.
+- [ ] `EXPO_ACCESS_TOKEN` is set only if real push delivery is enabled.
+- [ ] All migrations through `020_spark_moments.sql` are applied to the target D1 database.
 - [ ] Required role permissions are seeded.
 
 ## Deploy
 
-- [ ] `npx wrangler deploy` completes without errors.
-- [ ] `npx wrangler d1 migrations apply sparknc-db` reports all migrations applied.
+- [ ] `npm run deploy:dry-run` completes before deployment.
+- [ ] `node scripts/apply-d1-migrations.mjs <database-name> remote` reports all migrations applied.
+- [ ] `npm run deploy:worker` completes without errors.
 - [ ] No uncommitted secrets or `.dev.vars` are included in the bundle.
 
 ## Post-deployment smoke tests
@@ -46,7 +47,7 @@ curl -s https://<your-domain>/events
 
 - `INVALID_CONFIG` with `Missing DB binding` → check `wrangler.jsonc` D1 binding.
 - `Missing or too short SESSION_SECRET` → set `wrangler secret put SESSION_SECRET`.
-- `404` on known routes → run `npx wrangler deploy` again and verify `workers/index.ts` loaded.
+- `404` on known routes → verify the deployed Worker URL, then deploy again with `npm run deploy:worker`.
 
 ## Rollback trigger
 

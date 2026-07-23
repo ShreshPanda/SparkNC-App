@@ -1,5 +1,171 @@
 # Changelog
 
+## [Unreleased] - Sprint 10 — "The Complete Spark" (v1.0 Experience Completion)
+### Added
+- Personalized `TodaysSpark` insights on `dashboard.tsx` driven by real tasks, goals, events, opportunities, and XP.
+- Time-aware greeting on `dashboard.tsx` and `ai.tsx`.
+- `TodaysSpark` insight message fade-in rotation for a premium feel.
+
+### Changed
+- `growth.tsx` now uses `SparkButton` for `Generate Timeline` and `Refresh Timeline` CTAs.
+- `ai.tsx` greeting loads the user’s first name and uses a more coach-like subtitle.
+- Added `accessibilityRole` and `accessibilityLabel` to `ai.tsx` insight cards and send button.
+
+## [Unreleased] - Sprint 10 Part 2 — "The Spark That Stays"
+### Added
+- Presentation Mode now hides the bottom tab bar in `app/(tabs)/_layout.tsx` for cleaner demo navigation.
+- `components/AppShell.tsx` shows a subtle "Demo mode" pill and increases padding/title size when presenting.
+- `docs/SPARKNC_V1_PRODUCT_REVIEW.md` created.
+
+### Changed
+- `app/onboarding.tsx` `ActivityIndicator` color uses `colors.foreground` instead of hardcoded `#ffffff`.
+- `app/(auth)/login.tsx` and `app/(auth)/signup.tsx` CTAs and links now include `accessibilityRole` and `accessibilityLabel`.
+
+### Completed (later in Part 2)
+- **Portfolio Evolution**: `portfolio.tsx` hero "Your growth story", icon sections with counts, tag-style skills/badges.
+- **Ambassador Experience**: `ambassador.tsx` "Today's focus" summary, status pills, sorted students, richer quick actions.
+- **Leadership Command Center**: `analytics.tsx`, `impact.tsx`, `progress.tsx` hero KPI tiles, `SparkCard` sections, clearer trends.
+- **Community Refinement**: `messages.tsx` and `feedback.tsx` now use `SparkCard`, `SparkButton`, `Ionicons`, `FadeIn`, and clearer empty states.
+- **Emotional Experience Review**: `docs/EMOTIONAL_REVIEW.md` created; intended feelings mapped for all major screens.
+- **Full Role Walkthrough Validation**: `docs/ROLE_WALKTHROUGH.md` created; student, ambassador, admin, and leadership journeys verified.
+- `docs/EMOTIONAL_REVIEW.md` and `docs/ROLE_WALKTHROUGH.md` created.
+
+### Verified
+- No `TODO`/`FIXME`/`HACK`/`XXX` markers in `app/`, `components/`, or `services/`.
+- No native `Button` imports remain in `app/`.
+- `npm run typecheck`, `npm run typecheck:worker`, and `npm run test:worker` pass.
+
+## [Unreleased] - Launch Pass 1 (Ready for the Stage)
+### Added
+- `info` and `creative` base color tokens in `theme/colors.ts`.
+- `docs/LP1_REPORT.md` and `docs/RELEASE_READINESS_REPORT.md`.
+
+### Changed
+- Replaced hardcoded hex colors in `EmptyState`, `ProgressRing`, `SparkCard`, `ai.tsx`, `admin.tsx`, `calendar.tsx`, `dashboard.tsx`, `goals.tsx`, `growth.tsx`, `login.tsx`, `signup.tsx`, `messages.tsx`, `notifications.tsx`, `onboarding.tsx`, and `settings.tsx` with theme tokens.
+- Created `components/SparkButton.tsx` and replaced all native `Button` usages across tab screens with the consistent theme-aware CTA.
+- Added tactile press scale animation to `SparkButton`.
+- Fixed invisible `EmptyState` action button text.
+- Standardized `AppShell` titles across `ambassador.tsx`, `analytics.tsx`, and `signup.tsx`.
+- Polished `EmptyState` copy in `dashboard.tsx`, `growth.tsx`, `journey.tsx`, `portfolio.tsx`, and `admin.tsx`.
+- Polished `TextInput` placeholders across `admin.tsx`, `calendar.tsx`, `tasks.tsx`, `goals.tsx`, `messages.tsx`, `feedback.tsx`, and `ambassador-feedback.tsx`.
+- Added `accessibilityRole` and `accessibilityLabel` to primary actions in `notifications.tsx`, `calendar.tsx`, `admin.tsx`, `tasks.tsx`, `goals.tsx`, and `ambassador.tsx`.
+- Added screen-reader props to `SparkButton` and `EmptyState`.
+- Removed unused `services/syncService.ts`.
+
+### Verified
+- Expo typecheck passes.
+- Worker typecheck passes.
+- Worker tests pass (5 tests).
+
+## [Unreleased] - Design Pass 2 (The Living Platform)
+### Added
+- `OpportunityService`, `OpportunityController`, `/opportunities` route, and `OpportunityRecommendation` type.
+- Rule-based opportunity scoring from user stats and onboarding interests (no ML).
+- Adaptive `PriorityCard` on Dashboard that highlights overdue tasks, today's events, streak recovery, and next goals.
+- `GrowthStatistics.observations` generated from actual user stats with context-aware statements.
+- Dashboard `Opportunities for You` card showing scored, explainable recommendations.
+- Smart Goal Suggestions on `app/(tabs)/goals.tsx` generated from `GrowthStatistics` with accept/dismiss actions.
+- AI Growth Coach card on `app/(tabs)/ai.tsx` that proactively loads weekly reflection and planning suggestions.
+- Mentor Workspace quick actions on `app/(tabs)/ambassador.tsx` to recommend goals/events, celebrate milestones, and flag follow-ups via messaging.
+- Accessibility labels added to Dashboard `PriorityCard` and task completion rows.
+- Portfolio data model expanded with `volunteer`, `badge`, and `reflection` record types and rendered sections on `app/(tabs)/portfolio.tsx`.
+- School Identity support: `SchoolIdentity` type, `GET /schools/:id` route, `OrganizationService.getSchoolById`, and `cloudflareService.getSchool`.
+- Dashboard header displays school name and mascot when a `schoolId` is present.
+
+### Changed
+- `app/(tabs)/dashboard.tsx` now prioritizes urgent items at the top and surfaces personalized opportunities.
+- `app/(tabs)/growth.tsx` displays data-backed Growth Intelligence observations.
+- `app/(tabs)/goals.tsx` fetches growth statistics and suggests context-aware goals.
+- `app/(tabs)/ai.tsx` now opens with a `Growth Coach` card and celebration/reflection/planning insight cards.
+- `workers/api/services/growthStatisticsService.ts` derives observations from `StudentStatsRecord` and `GrowthCategory` data.
+- `shared/types.ts` extended with `GrowthStatistics.observations` and `OpportunityRecommendation`.
+
+### Verified
+- Expo typecheck passes.
+- Worker typecheck passes.
+
+## [Unreleased] - Design Pass 1 (The Spark Comes Alive)
+### Added
+- `AnimatedNumber` component for count-up statistics.
+- `ProgressRing` component (SVG data URI based) for level progress.
+- `TodaysSpark` component with rotating daily insights.
+- Proactive insight cards on the Spark AI screen.
+- Fade-in animation wrappers and micro-interactions on Dashboard, Growth, and AI.
+- Onboarding progress bar, theme tokens, and clearer support style selection.
+- Greeting-aware Spark AI header and polished chat bubbles.
+
+### Changed
+- `dashboard.tsx` redesigned with animated stats, Today's Spark, XP progress ring, and press feedback on tasks.
+- `growth.tsx` redesigned with Growth Statistics, Growth Story, and a visual milestone timeline.
+- `ai.tsx` rebuilt around proactive insight cards with chat as a secondary, calmer interaction.
+- `login.tsx` polished with centered hero, logo pill, and tagline.
+- `onboarding.tsx` converted to theme tokens with progress bar and animated step transitions.
+- `EmptyState.tsx` now supports an optional action button and has a friendly icon pill.
+
+### Verified
+- Expo typecheck passes.
+- Worker typecheck passes.
+
+## [Unreleased] - DC1 Demo Candidate 1 (Spark Comes Alive)
+### Added
+- `DemoSeedService`, `POST /demo/seed`, and `npm run seed:demo` script for a repeatable, protected demo dataset.
+- Production `DEMO_SEED_SECRET` for secure demo seed endpoint.
+- `cloudflareService` methods: `listAdminUsers`, `createAdminEvent`, `createAdminAnnouncement`.
+- Functional Settings screen with notification preference toggles and sign-out action.
+- Functional Admin screen with user list, event creation, and announcement creation.
+
+### Changed
+- `journey.tsx` and `portfolio.tsx` now fetch real data via `cloudflareService`; hardcoded sample data removed.
+- `impact.tsx` no longer falls back to synthetic demo data.
+- `SparkJourneyService` no longer relies on `toLocaleString` and validates dates for Worker compatibility.
+- Admin users, events, and announcements controllers now query/persist to D1.
+- Fixed repository column mappings for `users` (`xp_total`, `current_streak`, `last_activity_at`) in ambassador and admin command centers.
+- Fixed `EngagementAnalyticsRepository` to use `growth_events.occurred_at` and `event_type` columns.
+- Fixed `getJourneyController` and `getExecutiveDashboardController` to handle undefined GET request bodies.
+
+### Verified
+- Expo and Worker typechecks pass.
+- Demo dataset seeded to production D1 (7 demo accounts, 20 tasks, 20 goals, events, messages, notifications, achievements, journey, portfolio, growth, feedback, impact reports).
+- Key API endpoints verified: `/tasks`, `/goals`, `/journey`, `/portfolio`, `/notifications/preferences`, `/admin/users`, `/admin/events`, `/admin/announcements`, `/ambassador/dashboard`, `/executive/dashboard`, `/analytics/overview`, `/impact-analytics`.
+
+## [Unreleased] - RC2 First Cloudflare Deployment
+### Added
+- Isolated `staging` Worker configuration with independent D1 placeholders and generated `worker-configuration.d.ts` bindings.
+- Deployment readiness, health-check, and rollback scripts plus staging deployment commands.
+- Canonical Cloudflare setup, macOS setup, and production verification documentation.
+
+### Changed
+- Production `wrangler.jsonc` now binds the existing `sparknc-production` D1 database to `env.DB`.
+- Production `BETTER_AUTH_URL` set to `https://sparknc-api.shreshpanda.workers.dev`.
+- `ALLOWED_ORIGINS` set to local development origins while no production frontend URL is deployed.
+- Removed duplicate `env.sparknc_production` D1 binding.
+- Production deployment scripts now use the top-level production configuration; staging uses `--env staging`.
+- Frontend Worker URL is normalized and browser requests include credentials for session cookies.
+- Deployment checklists, README, project status, and next-task handoff now reflect the deployed production state.
+
+### Verified
+- Expo and Worker typechecks pass.
+- Worker test suite passes: 2 files, 5 tests.
+- Wrangler generated types are current.
+- Deployment preflight finds 20 ordered migrations, environment validation, DB bindings, staging configuration, and health endpoints.
+
+## [Unreleased] - RC1 Production Audit
+### Fixed
+- Removed unresolved README merge-conflict markers.
+- Registered community and student-feedback route factories.
+- Fixed root/frontend component imports, onboarding endpoint wiring, strict sync API types, and semantic status tokens.
+- Corrected Worker type errors and updated stale unit-test contracts.
+- Corrected migration and repository references to canonical D1 columns.
+- Moved Wrangler D1 migrations configuration into the database binding.
+
+### Added
+- RC1 repository, dependency, database, API, frontend, security, performance, documentation, test, and release-readiness audits.
+
+### Verified
+- Expo TypeScript check passes.
+- Worker TypeScript check passes.
+- Worker Vitest suite passes: 2 files, 5 tests.
+
 ## [2.3.0] - 2026-07-27 (v1.0 RC1)
 ### Added
 - Sprint 9 Launch Candidate, Production & Pilot Readiness features:

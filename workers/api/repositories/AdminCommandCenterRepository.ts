@@ -32,9 +32,9 @@ export class AdminCommandCenterRepository extends BaseRepository {
 
   async listStudentsForSupport(): Promise<AdminStudentSupportRecord[]> {
     const result = await this.db
-      .prepare(`SELECT id, name, email, xp, streak_current, last_active,
+      .prepare(`SELECT id, name, email, xp_total as xp, current_streak as streak_current, last_activity_at as last_active,
         (SELECT COUNT(*) FROM tasks WHERE tasks.user_id = users.id AND completed = 0) as incomplete_tasks
-       FROM users ORDER BY last_active ASC`)
+       FROM users ORDER BY last_activity_at ASC`)
       .bind()
       .all();
     return (result.results ?? []).map((row) => ({

@@ -5,8 +5,8 @@ export interface BetterAuthConfig {
   baseURL: string;
 }
 
-export function createBetterAuthConfig(overrides: Partial<BetterAuthConfig> = {}): BetterAuthConfig {
-  const env = getCloudflareEnv();
+export function createBetterAuthConfig(overrides: Partial<BetterAuthConfig> = {}, bindingEnv: Parameters<typeof getCloudflareEnv>[0] = {}): BetterAuthConfig {
+  const env = getCloudflareEnv(bindingEnv);
 
   return {
     secret: overrides.secret ?? env.betterAuthSecret,
@@ -14,8 +14,8 @@ export function createBetterAuthConfig(overrides: Partial<BetterAuthConfig> = {}
   };
 }
 
-export function createBetterAuthService() {
-  const config = createBetterAuthConfig();
+export function createBetterAuthService(bindingEnv: Parameters<typeof getCloudflareEnv>[0] = {}) {
+  const config = createBetterAuthConfig({}, bindingEnv);
 
   return {
     config,

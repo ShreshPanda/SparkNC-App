@@ -1,7 +1,7 @@
 import React from 'react';
 import { FlatList, View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
-import { spacing, typography } from '../../theme';
+import { useTheme } from '../../../providers/ThemeProvider';
+import { spacing, typography } from '../../../theme';
 
 interface Achievement {
   id: string;

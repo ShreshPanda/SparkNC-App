@@ -12,8 +12,6 @@ CREATE TABLE IF NOT EXISTS roles (
 
 CREATE INDEX IF NOT EXISTS idx_roles_name ON roles(name);
 
--- Link users to a school for scoped announcements and events
-ALTER TABLE users ADD COLUMN IF NOT EXISTS school_id TEXT;
 CREATE INDEX IF NOT EXISTS idx_users_school ON users(school_id);
 
 -- Events

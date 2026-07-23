@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaskRepository, type CreateTaskInput, type UpdateTaskInput } from '../repositories/TaskRepository';
+import { GrowthTimelineRepository } from '../repositories/GrowthTimelineRepository';
 import { assertNonEmpty } from '../validators/baseValidator';
 import { XPService } from './xpService';
 import { StreakService } from './streakService';
@@ -28,6 +29,7 @@ export class TaskService {
     private readonly repository: TaskRepository,
     private readonly xpService: XPService,
     private readonly streakService: StreakService,
+    private readonly growthRepository: GrowthTimelineRepository,
     private readonly notificationService?: NotificationService,
   ) {}
 
@@ -65,6 +67,14 @@ export class TaskService {
     if (task.completed) {
       xpAwarded = await this.xpService.awardTaskCompletion(userId, task.xpReward);
       streak = await this.streakService.recordActivity(userId);
+      const now = new Date().toISOString();
+      await this.growthRepository.recordEvent(userId, {
+        eventType: 'task_completed',
+        title: 'Completed task',
+        description: task.title,
+        occurredAt: task.updatedAt ?? now,
+        metadata: JSON.stringify({ taskId: task.id, xp: xpAwarded }),
+      });
     }
 
     return {
@@ -121,6 +131,14 @@ export class TaskService {
 
     const xpAwarded = await this.xpService.awardTaskCompletion(userId, updated.xpReward);
     const streak = await this.streakService.recordActivity(userId);
+    const now = new Date().toISOString();
+    await this.growthRepository.recordEvent(userId, {
+      eventType: 'task_completed',
+      title: 'Completed task',
+      description: updated.title,
+      occurredAt: updated.updatedAt ?? now,
+      metadata: JSON.stringify({ taskId: updated.id, xp: xpAwarded }),
+    });
 
     if (this.notificationService) {
       await this.notificationService.createNotification({

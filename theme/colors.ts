@@ -7,6 +7,8 @@ export const colors = {
   mist: '#f8fafc',
   dark: '#020617',
   muted: '#64748b',
+  info: '#3b82f6',
+  creative: '#a855f7',
 } as const;
 
 export const lightColors = {
@@ -18,6 +20,8 @@ export const lightColors = {
   accent: colors.spark,
   highlight: colors.gold,
   muted: colors.muted,
+  success: colors.spark,
+  error: '#dc2626',
 };
 
 export const darkColors = {
@@ -29,4 +33,6 @@ export const darkColors = {
   accent: colors.spark,
   highlight: colors.gold,
   muted: colors.slate,
+  success: colors.spark,
+  error: '#f87171',
 };

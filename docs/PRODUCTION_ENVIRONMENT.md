@@ -1,13 +1,13 @@
 # Production Environment
 
-This document is the source of truth for the SparkNC production environment.
+This document summarizes production environment requirements. `CLOUDFLARE_SETUP.md` is the canonical first-deployment sequence.
 
 ## Cloudflare Worker
 
 - **Worker name**: `sparknc-api`
 - **Entrypoint**: `workers/index.ts`
 - **Config**: `wrangler.jsonc`
-- **Compatibility date**: `2025-07-18`
+- **Compatibility date**: `2026-07-20`
 - **Compatibility flags**: `nodejs_compat`
 - **Minify**: enabled for production
 
@@ -15,8 +15,8 @@ This document is the source of truth for the SparkNC production environment.
 
 - **Binding**: `DB`
 - **Migrations**: `workers/database/migrations/*.sql`
-- **Apply locally**: `npx wrangler d1 migrations apply sparknc-db --local`
-- **Apply production**: `npx wrangler d1 migrations apply sparknc-db`
+- **Apply locally**: `node scripts/apply-d1-migrations.mjs <database-name> local`
+- **Apply production**: `node scripts/apply-d1-migrations.mjs <database-name> remote`
 
 ## Required secrets
 
@@ -24,8 +24,7 @@ Set via `wrangler secret put` or the Cloudflare dashboard:
 
 - `SESSION_SECRET` — at least 32 characters
 - `BETTER_AUTH_SECRET` — at least 32 characters (if Better Auth is enabled)
-- `EXPO_ACCESS_TOKEN` — for push notification delivery
-- `CLOUDFLARE_API_TOKEN` — for internal Cloudflare API calls (optional)
+- `EXPO_ACCESS_TOKEN` is required only when real Expo push delivery is enabled; do not add an account-wide Cloudflare API token unless a Worker feature explicitly requires it.
 
 ## Environment variables
 
@@ -34,6 +33,8 @@ Set via `wrangler secret put` or the Cloudflare dashboard:
 - `ENVIRONMENT=production`
 - `COOKIE_SAMESITE=Strict`
 - `COOKIE_SECURE=true`
+- `BETTER_AUTH_URL=https://<YOUR_WORKER_DOMAIN>`
+- `ALLOWED_ORIGINS=https://<YOUR_WEB_ORIGIN>`
 
 Frontend `.env`:
 
@@ -47,9 +48,10 @@ Frontend `.env`:
 
 ## Rollback
 
-1. Re-deploy the previous commit via `npx wrangler deploy`.
-2. Restore D1 from the most recent backup if a migration caused issues.
-3. Verify `/status` returns `status: ok`.
+1. Inspect prior versions with `npx wrangler versions list`.
+2. Roll back with `node scripts/rollback-worker.mjs production <version-id>`.
+3. Use a compensating migration for schema remediation.
+4. Verify with `node scripts/check-worker-health.mjs https://<worker-domain>`.
 
 ## Region and compliance
 

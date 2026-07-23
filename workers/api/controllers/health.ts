@@ -21,7 +21,7 @@ export async function healthController(
 
   if (db) {
     try {
-      await db.prepare('SELECT 1').all();
+      await db.prepare('SELECT 1').bind().all();
       database = 'connected';
     } catch {
       database = 'disconnected';
@@ -35,12 +35,12 @@ export async function healthController(
   return {
     status,
     database,
-    version: '1.0.0',
+    version: APP_VERSION,
     timestamp,
   };
 }
 
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.0.0-rc2';
 
 export interface MigrationState {
   appliedMigrations: number;

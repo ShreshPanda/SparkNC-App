@@ -3,7 +3,7 @@ import { SessionsRepository } from '../repositories/SessionsRepository';
 
 declare const crypto: Crypto; // Cloudflare Workers global
 
-import { assertNonEmpty, assertValidEmail } from '../validators/baseValidator';
+import { assertLength, assertNonEmpty, assertValidEmail } from '../validators/baseValidator';
 
 const SESSION_COOKIE_NAME = 'sparknc_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -17,7 +17,8 @@ function toIso(ms: number): string {
 }
 
 function textToBuffer(text: string): ArrayBuffer {
-  return new TextEncoder().encode(text);
+  const bytes = new TextEncoder().encode(text);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {
@@ -37,6 +38,10 @@ function base64UrlToBytes(value: string): Uint8Array {
   return bytes;
 }
 
+function bytesToBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 function randomSalt(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
   return bytesToBase64Url(bytes);
@@ -54,7 +59,7 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 async function deriveKey(password: string, salt: string, iterations: number): Promise<ArrayBuffer> {
   const passwordKey = await crypto.subtle.importKey('raw', textToBuffer(password), { name: 'PBKDF2' }, false, ['deriveBits']);
   return crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: base64UrlToBytes(salt), iterations, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: bytesToBuffer(base64UrlToBytes(salt)), iterations, hash: 'SHA-256' },
     passwordKey,
     KEY_BITS,
   );
@@ -147,10 +152,10 @@ export class AuthService {
     assertNonEmpty(input.email, 'Email is required');
     assertValidEmail(input.email);
     assertNonEmpty(input.password, 'Password is required');
+    assertLength(input.password, 'Password', 8, 256);
     assertNonEmpty(input.name, 'Name is required');
 
-    const role = input.role ?? 'student';
-    assertNonEmpty(role, 'Role is required');
+    const role = 'student';
 
     const salt = randomSalt();
 

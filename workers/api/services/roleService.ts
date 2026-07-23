@@ -1,6 +1,6 @@
 import { RoleRepository, type RoleRecord } from '../repositories/RoleRepository';
 
-export type SparkRole = 'student' | 'ambassador' | 'location_manager' | 'admin';
+export type SparkRole = 'student' | 'ambassador' | 'lab_leader' | 'location_manager' | 'board_member' | 'admin';
 export type SparkPermission = string;
 
 export interface Role {

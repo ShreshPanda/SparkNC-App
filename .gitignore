@@ -31,11 +31,13 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 .dev.vars
 
 # Wrangler user overrides
 wrangler.toml
+.wrangler/
 
 # typescript
 *.tsbuildinfo

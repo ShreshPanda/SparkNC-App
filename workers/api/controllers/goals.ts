@@ -1,4 +1,5 @@
 import { GoalRepository } from '../repositories/GoalRepository';
+import { GrowthTimelineRepository } from '../repositories/GrowthTimelineRepository';
 import { GoalService } from '../services/goalService';
 import { XPService } from '../services/xpService';
 import { StreakService } from '../services/streakService';
@@ -25,8 +26,9 @@ function createGoalService(context?: GoalControllerContext) {
   const repository = new GoalRepository(db as never);
   const xpService = new XPService(db as never);
   const streakService = new StreakService(db as never);
+  const growthRepository = new GrowthTimelineRepository(db as never);
   const notificationService = new NotificationService(new NotificationRepository(db as never));
-  return new GoalService(repository, xpService, streakService, notificationService);
+  return new GoalService(repository, xpService, streakService, growthRepository, notificationService);
 }
 
 export async function listGoalsController(context?: GoalControllerContext) {

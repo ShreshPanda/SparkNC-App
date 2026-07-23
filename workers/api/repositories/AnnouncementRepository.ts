@@ -47,6 +47,7 @@ export class AnnouncementRepository extends BaseRepository {
     try {
       const result = await this.db
         .prepare('SELECT id, title, body, scope, school_id, created_by, created_at, updated_at FROM announcements ORDER BY created_at DESC')
+        .bind()
         .all();
       return (result.results ?? []).map((row) => this.mapRow(row));
     } catch (error) {

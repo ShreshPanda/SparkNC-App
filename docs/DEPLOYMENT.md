@@ -1,15 +1,12 @@
 # Deployment Guide
 
-This guide prepares and deploys the SparkNC platform on Cloudflare and the Expo frontend.
+This guide is the deployment overview. Use `CLOUDFLARE_SETUP.md` as the canonical sequential first-deployment procedure and `PRODUCTION_VERIFICATION.md` as the post-deployment gate.
 
 ## Prerequisites
 
 - Node.js LTS and npm installed.
 - A Cloudflare account with Workers and D1 enabled.
-- Wrangler CLI installed globally or as a dev dependency:
-  ```bash
-  npm install -g wrangler
-  ```
+- The repository-local Wrangler CLI is available through `npx wrangler`.
 - The Expo CLI (`npx expo`) available for the mobile/web frontend.
 
 ## 1. Cloudflare login
@@ -25,7 +22,7 @@ This opens a browser to authenticate the CLI with your Cloudflare account.
 Create a D1 database:
 
 ```bash
-npx wrangler d1 create sparknc-db
+npx wrangler d1 create <new-sparknc-database-name>
 ```
 
 Note the `database_id` returned. Open `wrangler.jsonc` and replace the placeholders in `d1_databases`:
@@ -34,8 +31,8 @@ Note the `database_id` returned. Open `wrangler.jsonc` and replace the placehold
 "d1_databases": [
   {
     "binding": "DB",
-    "database_name": "sparknc-db",
-    "database_id": "<YOUR_DATABASE_ID>"
+    "database_name": "<YOUR_D1_DATABASE_NAME>",
+    "database_id": "<YOUR_D1_DATABASE_ID>"
   }
 ]
 ```
@@ -45,21 +42,16 @@ Note the `database_id` returned. Open `wrangler.jsonc` and replace the placehold
 Apply the ordered migrations in `workers/database/migrations`:
 
 ```bash
-npx wrangler d1 migrations apply sparknc-db --local
+node scripts/apply-d1-migrations.mjs <database-name> local
 ```
 
 For production:
 
 ```bash
-npx wrangler d1 migrations apply sparknc-db
+node scripts/apply-d1-migrations.mjs <database-name> remote
 ```
 
-Migrations are named with numeric prefixes so they execute in order:
-
-1. `001_initial.sql`
-2. `002_sessions.sql`
-3. `003_passwords.sql`
-4. `004_gamification.sql`
+Migrations are named with contiguous numeric prefixes and the validated chain is `001_initial.sql` through `020_spark_moments.sql`.
 
 ## 4. Configure secrets and environment variables
 
@@ -93,7 +85,7 @@ EXPO_PUBLIC_CLOUDFLARE_WORKER_URL=http://localhost:8787
 Start the Worker locally with D1 bindings:
 
 ```bash
-npx wrangler dev
+npx wrangler dev --local
 ```
 
 The local Worker is available at `http://localhost:8787` by default.
@@ -101,7 +93,7 @@ The local Worker is available at `http://localhost:8787` by default.
 ## 6. Verify the health endpoint
 
 ```bash
-curl http://localhost:8787/health
+node scripts/check-worker-health.mjs http://localhost:8787
 ```
 
 Expected response:
@@ -112,7 +104,7 @@ Expected response:
   "data": {
     "status": "ok",
     "database": "connected",
-    "version": "1.0.0",
+    "version": "1.0.0-rc2",
     "timestamp": "..."
   },
   "timestamp": "...",
@@ -122,11 +114,20 @@ Expected response:
 
 ## 7. Deploy the Worker
 
+Validate the production Worker configuration first:
+
 ```bash
-npx wrangler deploy
+npm run deploy:dry-run
 ```
 
-This deploys the Worker to `sparknc-api.<your_subdomain>.workers.dev`.
+Apply remote migrations using the real D1 database name, then deploy:
+
+```bash
+node scripts/apply-d1-migrations.mjs <production-database-name> remote
+npm run deploy:worker
+```
+
+Wrangler prints the deployed Worker URL and version ID. Record both, then run the health-check script against the printed URL.
 
 ## 8. Deploy the Expo web frontend
 
@@ -153,13 +154,10 @@ Alternatively, distribute via the Expo app stores for iOS and Android.
 
 ## 10. Rollback process
 
-1. Revert the Git commit that introduced the change.
-2. Redeploy the previous Worker version:
-   ```bash
-   git checkout <previous-commit>
-   npx wrangler deploy
-   ```
-3. For D1 migrations, Wrangler does not automatically roll back. Write compensating migrations if schema changes must be undone.
+1. Record the incident and identify the last known-good Worker version with `npx wrangler versions list`.
+2. Roll back the Worker only with `npm run rollback:worker` or `node scripts/rollback-worker.mjs production <version-id>`.
+3. D1 migrations are forward-only. Apply a compensating migration when schema remediation is necessary.
+4. Run `node scripts/check-worker-health.mjs https://<worker-domain>` after rollback.
 
 ## Required Cloudflare dashboard configuration
 
