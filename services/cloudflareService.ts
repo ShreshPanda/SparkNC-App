@@ -35,9 +35,7 @@ import {
   RecognitionSummary,
 } from '../shared/types';
 
-const runtimeEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
-
-const workerUrl = (runtimeEnv.EXPO_PUBLIC_CLOUDFLARE_WORKER_URL ?? '').replace(/\/$/, '');
+const workerUrl = (process.env.EXPO_PUBLIC_CLOUDFLARE_WORKER_URL ?? '').replace(/\/$/, '');
 
 let sessionCookie: string | null = null;
 

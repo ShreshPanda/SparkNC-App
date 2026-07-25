@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CLOUDFLARE_WORKER_URL": "https://sparknc-api.shreshpanda.workers.dev",
+        "EXPO_PUBLIC_APP_NAME": "SparkNC"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CLOUDFLARE_WORKER_URL": "https://sparknc-api.shreshpanda.workers.dev",
+        "EXPO_PUBLIC_APP_NAME": "SparkNC"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_CLOUDFLARE_WORKER_URL": "https://sparknc-api.shreshpanda.workers.dev",
+        "EXPO_PUBLIC_APP_NAME": "SparkNC"
+      }
+    }
+  }
+}
