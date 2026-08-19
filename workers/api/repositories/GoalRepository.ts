@@ -35,7 +35,7 @@ export class GoalRepository extends BaseRepository {
 
   async listGoals(userId: string): Promise<GoalRecord[]> {
     try {
-      const statement = this.db.prepare('SELECT id, user_id, title, description, progress, completed, xp_reward, created_at, updated_at FROM goals WHERE user_id = ? ORDER BY created_at DESC');
+      const statement = this.db.prepare('SELECT id, user_id, title, description, progress, completed, xp_reward, created_at, updated_at FROM goals WHERE user_id = ? ORDER BY created_at DESC LIMIT 200');
       const result = await statement.bind(userId).all();
       return (result.results ?? []).map((row) => this.mapRow(row));
     } catch (error) {

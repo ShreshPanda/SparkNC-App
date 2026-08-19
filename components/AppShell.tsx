@@ -5,12 +5,12 @@ import { usePresentation } from '../providers/PresentationProvider';
 import { useTheme } from '../providers/ThemeProvider';
 import { spacing, typography } from '../theme';
 
-export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
+export function AppShell({ title, children, transparent }: { title: string; children: React.ReactNode; transparent?: boolean }) {
   const { colors } = useTheme();
   const { enabled } = usePresentation();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }, enabled && styles.containerPresentation]}>
+    <View style={[styles.container, !transparent && { backgroundColor: colors.background }, enabled && styles.containerPresentation]}>
       {enabled ? (
         <View style={styles.demoHint}>
           <View style={[styles.demoPill, { backgroundColor: colors.highlight }]}>

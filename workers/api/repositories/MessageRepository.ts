@@ -113,7 +113,7 @@ export class MessageRepository extends BaseRepository {
     try {
       await this.db.prepare('INSERT INTO conversations (id, created_at, updated_at) VALUES (?, ?, ?)').bind(conversationId, now, now).run();
       for (const userId of participantIds) {
-        await this.db.prepare('INSERT INTO conversation_participants (conversation_id, user_id, created_at) VALUES (?, ?, ?)').bind(conversationId, userId, now).run();
+        await this.db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id, created_at) VALUES (?, ?, ?)').bind(conversationId, userId, now).run();
       }
       return {
         id: conversationId,

@@ -32,7 +32,7 @@ export class PortfolioRepository extends BaseRepository {
 
   async addRecord(record: PortfolioRecord): Promise<void> {
     await this.db
-      .prepare('INSERT INTO portfolio (user_id, type, id, title, description, date, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .prepare('INSERT OR REPLACE INTO portfolio (user_id, type, id, title, description, date, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(record.userId, record.type, record.id, record.title, record.description ?? null, record.date ?? null, record.metadata ?? null)
       .run();
   }

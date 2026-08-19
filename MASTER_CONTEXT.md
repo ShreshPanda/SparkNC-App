@@ -21,7 +21,7 @@ The app is structured to feel premium and modern from the start.
 - NativeWind and Tailwind configuration created
 - Light/dark theme provider with central tokens introduced
 - Cloudflare Worker backend foundation implemented with route/controller/service/middleware/validator structure
-- D1 migrations created for schools, users, roles, goals, tasks, events, messages, activity logs, and notifications
+- D1 migrations created for schools, users, roles, goals, tasksy, events, messages, activity logs, and notifications
 - Shared TypeScript models introduced for users, roles, tasks, goals, events, messages, activities, and notifications
 - Placeholder screens for authentication, dashboard, tasks, goals, calendar, messages, notifications, settings, and admin
 - D1-backed persistence added for Tasks and Goals through repositories, services, and validated route handlers

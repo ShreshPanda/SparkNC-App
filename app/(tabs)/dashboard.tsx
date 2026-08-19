@@ -1,12 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AppShell } from '../../components/AppShell';
+import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, Vibration, View } from 'react-native';
+import { AnimatedBackground } from '../../components/AnimatedBackground';
 import { AnimatedNumber } from '../../components/AnimatedNumber';
+import { AppShell } from '../../components/AppShell';
+import { Confetti } from '../../components/Confetti';
 import { EmptyState } from '../../components/EmptyState';
 import { FadeIn } from '../../components/AnimatedWrapper';
+import { ProgressBar } from '../../components/ProgressBar';
 import { ProgressRing } from '../../components/ProgressRing';
 import { SparkCard } from '../../components/SparkCard';
+import { StreakWidget } from '../../components/StreakWidget';
 import { TodaysSpark } from '../../components/TodaysSpark';
+import { XPWidget } from '../../components/XPWidget';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService, type AuthSession } from '../../services/authService';
 import { cloudflareService } from '../../services/cloudflareService';
@@ -66,6 +71,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pressedTask, setPressedTask] = useState<string | null>(null);
+  const [confetti, setConfetti] = useState(false);
   const [bounce] = useState(() => new Animated.Value(1));
 
   async function load(silent = false) {
@@ -109,6 +115,8 @@ export default function DashboardScreen() {
     try {
       await cloudflareService.updateTask(task.id, { completed: true });
       setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      Vibration.vibrate([0, 50, 50, 100]);
+      setConfetti(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete task');
     } finally {
@@ -118,11 +126,13 @@ export default function DashboardScreen() {
 
   if (loading && !user) {
     return (
-      <AppShell title="Dashboard">
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
-      </AppShell>
+      <AnimatedBackground>
+        <AppShell title="Dashboard" transparent>
+          <View style={styles.center}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        </AppShell>
+      </AnimatedBackground>
     );
   }
 
@@ -147,8 +157,10 @@ export default function DashboardScreen() {
   }, [xp, tasks.length, goals, events, opportunities, user?.streak?.current]);
 
   return (
-    <AppShell title="Dashboard">
-      <ScrollView contentContainerStyle={styles.container}>
+    <AnimatedBackground>
+      <Confetti active={confetti} onDone={() => setConfetti(false)} />
+      <AppShell title="Dashboard" transparent>
+        <ScrollView contentContainerStyle={styles.container}>
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
         <FadeIn delay={0}>
@@ -182,14 +194,12 @@ export default function DashboardScreen() {
 
         <FadeIn delay={160}>
           <View style={styles.statsRow}>
-            <SparkCard style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AnimatedNumber value={xp} style={[styles.statValue, { color: colors.highlight }]} suffix=" XP" />
-              <Text style={[styles.statLabel, { color: colors.muted }]}>XP</Text>
-            </SparkCard>
-            <SparkCard style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AnimatedNumber value={user?.streak?.current ?? 0} style={[styles.statValue, { color: colors.accent }]} />
-              <Text style={[styles.statLabel, { color: colors.muted }]}>Streak</Text>
-            </SparkCard>
+            <View style={styles.statCard}>
+              <XPWidget xp={xp} nextLevel={NEXT_LEVEL_XP} />
+            </View>
+            <View style={styles.statCard}>
+              <StreakWidget current={user?.streak?.current ?? 0} longest={user?.streak?.longest} />
+            </View>
             <SparkCard style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <AnimatedNumber value={tasks.length} style={[styles.statValue, { color: colors.foreground }]} />
               <Text style={[styles.statLabel, { color: colors.muted }]}>Active</Text>
@@ -247,7 +257,7 @@ export default function DashboardScreen() {
                 <View key={goal.id} style={styles.goalRow}>
                   <Text style={[styles.listItem, { color: colors.foreground, flex: 1 }]}>{goal.title}</Text>
                   <View style={[styles.progress, { backgroundColor: colors.border }]}>
-                    <Animated.View style={[styles.progressFill, { width: `${Math.min(goal.progress ?? 0, 100)}%`, backgroundColor: colors.accent }]} />
+                    <ProgressBar progress={goal.progress ?? 0} color={colors.accent} trackColor={colors.border} />
                   </View>
                   <AnimatedNumber value={goal.progress ?? 0} style={[styles.caption, { color: colors.muted, width: 40, textAlign: 'right' }]} suffix="%" />
                 </View>
@@ -305,6 +315,7 @@ export default function DashboardScreen() {
         </FadeIn>
       </ScrollView>
     </AppShell>
+    </AnimatedBackground>
   );
 }
 

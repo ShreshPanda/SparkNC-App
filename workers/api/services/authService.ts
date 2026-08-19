@@ -156,20 +156,26 @@ export class AuthService {
     assertNonEmpty(input.name, 'Name is required');
 
     const role = 'student';
+    const normalizedEmail = input.email.toLowerCase();
+
+    const existing = await this.db
+      .prepare('SELECT 1 FROM users WHERE email = ? LIMIT 1')
+      .bind(normalizedEmail)
+      .all();
+    if (existing.results?.[0]) {
+      throw new Error('An account with that email already exists');
+    }
 
     const salt = randomSalt();
-
     const passwordHash = await this.hashPassword(input.password, salt);
 
-    // Create user only if not exists
     const userId = `user-${crypto.randomUUID()}`;
-
 
     await this.db
       .prepare(
         'INSERT INTO users (id, email, name, role, created_at, updated_at, password_hash, password_salt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .bind(userId, input.email.toLowerCase(), input.name, role, new Date().toISOString(), new Date().toISOString(), passwordHash, salt)
+      .bind(userId, normalizedEmail, input.name, role, new Date().toISOString(), new Date().toISOString(), passwordHash, salt)
       .run();
 
     const sessionsRepo = new SessionsRepository(this.db);
@@ -220,7 +226,7 @@ export class AuthService {
     await sessionsRepo.revokeSession(sessionId);
   }
 
-  async validateSession(sessionId: string | undefined): Promise<{ userId: string; role: string; email: string; name: string; schoolId?: string } | null> {
+  async validateSession(sessionId: string | undefined): Promise<{ userId: string; id: string; role: string; email: string; name: string; schoolId?: string; avatarUrl?: string; isActive: boolean; lastSeenAt?: string; createdAt: string; updatedAt: string } | null> {
     if (!sessionId) return null;
 
     const sessionsRepo = new SessionsRepository(this.db);
@@ -234,7 +240,7 @@ export class AuthService {
     if (Number.isNaN(exp) || exp < now) return null;
 
     const user = await this.db
-      .prepare('SELECT id, email, name, role, school_id FROM users WHERE id = ? LIMIT 1')
+      .prepare('SELECT id, email, name, role, school_id, avatar_url, is_active, last_seen_at, created_at, updated_at FROM users WHERE id = ? LIMIT 1')
       .bind(session.userId)
       .all();
 
@@ -243,10 +249,16 @@ export class AuthService {
 
     return {
       userId: String(row.id ?? ''),
+      id: String(row.id ?? ''),
       email: String(row.email ?? ''),
       name: String(row.name ?? ''),
       role: String(row.role ?? 'student'),
       schoolId: row.school_id == null ? undefined : String(row.school_id),
+      avatarUrl: row.avatar_url == null ? undefined : String(row.avatar_url),
+      isActive: Boolean(row.is_active ?? 1),
+      lastSeenAt: row.last_seen_at == null ? undefined : String(row.last_seen_at),
+      createdAt: String(row.created_at ?? ''),
+      updatedAt: String(row.updated_at ?? ''),
     };
   }
 }

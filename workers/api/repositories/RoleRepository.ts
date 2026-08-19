@@ -40,7 +40,7 @@ export class RoleRepository extends BaseRepository {
 
   async createRole(input: { id: string; name: string; permissions: string; createdAt: string; updatedAt: string }): Promise<void> {
     await this.db
-      .prepare('INSERT INTO roles (id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+      .prepare('INSERT OR IGNORE INTO roles (id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
       .bind(input.id, input.name, input.permissions, input.createdAt, input.updatedAt)
       .run();
   }

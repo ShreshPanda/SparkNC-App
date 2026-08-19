@@ -1,8 +1,11 @@
 import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AnimatedBackground } from '../../components/AnimatedBackground';
 import { AppShell } from '../../components/AppShell';
 import { FadeIn } from '../../components/AnimatedWrapper';
+import { GlassCard } from '../../components/GlassCard';
+import { SparkButton } from '../../components/SparkButton';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService } from '../../services/authService';
 import { colors, spacing, typography } from '../../theme';
@@ -34,51 +37,51 @@ export default function LoginScreen() {
   }
 
   return (
-    <AppShell title="Welcome">
-      <ScrollView contentContainerStyle={styles.container}>
-        <FadeIn delay={0}>
-          <View style={styles.hero}>
-            <View style={[styles.logoPill, { backgroundColor: colors.accent }]}>
-              <Ionicons name="flame" size={40} color={colors.foreground} />
+    <AnimatedBackground>
+      <AppShell title="Welcome" transparent>
+        <ScrollView contentContainerStyle={styles.container}>
+          <FadeIn delay={0}>
+            <View style={styles.hero}>
+              <View style={[styles.logoPill, { backgroundColor: colors.accent }]}>
+                <Ionicons name="flame" size={40} color={colors.foreground} />
+              </View>
+              <Text style={[styles.title, { color: colors.foreground }]}>SparkNC</Text>
+              <Text style={[styles.subtitle, { color: colors.muted }]}>Your growth. Your community. Your spark.</Text>
             </View>
-            <Text style={[styles.title, { color: colors.foreground }]}>SparkNC</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>Your growth. Your community. Your spark.</Text>
-          </View>
-        </FadeIn>
+          </FadeIn>
 
-        <FadeIn delay={120}>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Sign in</Text>
-            {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
-            <TextInput
-              style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="Email"
-              placeholderTextColor={colors.muted}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TextInput
-              style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="Password"
-              placeholderTextColor={colors.muted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <Pressable style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleLogin} disabled={loading} accessibilityRole="button" accessibilityLabel={loading ? 'Signing in' : 'Continue signing in'}>
-              {loading ? <ActivityIndicator color={colors.foreground} /> : <Text style={styles.buttonText}>Continue</Text>}
-            </Pressable>
-            <Link href="/(auth)/signup" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Create an account">
-                <Text style={[styles.link, { color: colors.accent }]}>Create an account</Text>
-              </Pressable>
-            </Link>
-          </View>
-        </FadeIn>
-      </ScrollView>
-    </AppShell>
+          <FadeIn delay={120}>
+            <GlassCard style={styles.card} intensity="high">
+              <Text style={[styles.heading, { color: colors.foreground }]}>Sign in</Text>
+              {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+              <TextInput
+                style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                placeholder="Email"
+                placeholderTextColor={colors.muted}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              <TextInput
+                style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                placeholder="Password"
+                placeholderTextColor={colors.muted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+              <SparkButton title="Continue" onPress={handleLogin} loading={loading} disabled={!email.trim() || !password.trim()} />
+              <Link href="/(auth)/signup" asChild>
+                <Pressable accessibilityRole="link" accessibilityLabel="Create an account">
+                  <Text style={[styles.link, { color: colors.accent }]}>Create an account</Text>
+                </Pressable>
+              </Link>
+            </GlassCard>
+          </FadeIn>
+        </ScrollView>
+      </AppShell>
+    </AnimatedBackground>
   );
 }
 

@@ -38,7 +38,7 @@ export class TaskRepository extends BaseRepository {
 
   async listTasks(userId: string): Promise<TaskRecord[]> {
     try {
-      const statement = this.db.prepare('SELECT id, user_id, title, description, category, due_date, completed, xp_reward, created_at, updated_at FROM tasks WHERE user_id = ? ORDER BY created_at DESC');
+      const statement = this.db.prepare('SELECT id, user_id, title, description, category, due_date, completed, xp_reward, created_at, updated_at FROM tasks WHERE user_id = ? ORDER BY created_at DESC LIMIT 200');
       const result = await statement.bind(userId).all();
       return (result.results ?? []).map((row) => this.mapRow(row));
     } catch (error) {

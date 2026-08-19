@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, Vibration, type PressableProps } from 'react-native';
 import { useTheme } from '../providers/ThemeProvider';
 import { colors as baseColors, spacing, typography } from '../theme';
 
@@ -30,7 +30,10 @@ export function SparkButton({ title, variant = 'primary', loading, disabled, onP
   return (
     <AnimatedPressable
       onPress={onPress}
-      onPressIn={() => animate(0.96)}
+      onPressIn={() => {
+        Vibration.vibrate(30);
+        animate(0.94);
+      }}
       onPressOut={() => animate(1)}
       disabled={disabled || loading}
       style={[styles.button, { backgroundColor, opacity: disabled ? 0.5 : 1, transform: [{ scale }] }]}
@@ -39,7 +42,7 @@ export function SparkButton({ title, variant = 'primary', loading, disabled, onP
       accessibilityState={{ disabled: !!disabled || !!loading }}
       {...rest}
     >
-      <Text style={styles.text}>{loading ? `${title}...` : title}</Text>
+      {loading ? <ActivityIndicator color={baseColors.white} size="small" /> : <Text style={styles.text}>{title}</Text>}
     </AnimatedPressable>
   );
 }

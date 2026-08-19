@@ -113,10 +113,17 @@ export async function meController(_input: unknown, context?: { env?: unknown; h
   return {
     ok: true,
     data: {
+      id: user.id,
       userId: user.userId,
       email: user.email,
       name: user.name,
       role: user.role,
+      schoolId: user.schoolId,
+      avatarUrl: user.avatarUrl,
+      isActive: user.isActive,
+      lastSeenAt: user.lastSeenAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       xp: xpTotal,
       streak,
     },

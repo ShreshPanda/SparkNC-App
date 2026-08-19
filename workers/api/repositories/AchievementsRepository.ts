@@ -74,7 +74,7 @@ export class AchievementsRepository extends BaseRepository {
       this.db.prepare('SELECT COUNT(*) as count FROM goals WHERE user_id = ? AND completed = 1').bind(userId).all(),
       this.db.prepare('SELECT COUNT(*) as count FROM messages WHERE sender_id = ?').bind(userId).all(),
       this.db.prepare('SELECT COUNT(*) as count FROM event_attendees WHERE user_id = ?').bind(userId).all(),
-      this.db.prepare('SELECT xp, streak_current, streak_longest FROM users WHERE id = ? LIMIT 1').bind(userId).all(),
+      this.db.prepare('SELECT xp_total as xp, current_streak as streak_current, longest_streak as streak_longest FROM users WHERE id = ? LIMIT 1').bind(userId).all(),
     ]);
     const userRow = user.results?.[0] ?? {};
     return {
@@ -113,7 +113,7 @@ export class AchievementsRepository extends BaseRepository {
       return existing;
     }
     await this.db
-      .prepare('INSERT INTO personal_records (id, user_id, record_type, record_value, record_unit, recorded_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .prepare('INSERT OR REPLACE INTO personal_records (id, user_id, record_type, record_value, record_unit, recorded_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(id, userId, recordType, value, unit ?? null, now, meta)
       .run();
     return { id, userId, recordType, recordValue: value, recordUnit: unit, recordedAt: now, metadata: meta ?? undefined };
