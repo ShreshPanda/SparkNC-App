@@ -2,33 +2,86 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePresentation } from '../../providers/PresentationProvider';
 import { useTheme } from '../../providers/ThemeProvider';
+import { spark } from '../../theme';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { enabled } = usePresentation();
 
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted, tabBarStyle: enabled ? { display: 'none' } : undefined }}>
-      <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="grid" color={color} size={20} /> }} />
-      <Tabs.Screen name="tasks" options={{ title: 'Tasks', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="checkmark-circle" color={color} size={20} /> }} />
-      <Tabs.Screen name="goals" options={{ title: 'Goals', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="flag" color={color} size={20} /> }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="calendar" color={color} size={20} /> }} />
-      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="chatbubble" color={color} size={20} /> }} />
-      <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="notifications" color={color} size={20} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="person" color={color} size={20} /> }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="stats-chart" color={color} size={20} /> }} />
-      <Tabs.Screen name="growth" options={{ title: 'Timeline', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="time" color={color} size={20} /> }} />
-      <Tabs.Screen name="journey" options={{ title: 'Journey', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="map" color={color} size={20} /> }} />
-      <Tabs.Screen name="portfolio" options={{ title: 'Portfolio', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="briefcase" color={color} size={20} /> }} />
-      <Tabs.Screen name="achievements" options={{ title: 'Achievements', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="trophy" color={color} size={20} /> }} />
-      <Tabs.Screen name="ai" options={{ title: 'Spark AI', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="sparkles" color={color} size={20} /> }} />
-      <Tabs.Screen name="ambassador" options={{ title: 'Ambassador', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="people" color={color} size={20} /> }} />
-      <Tabs.Screen name="analytics" options={{ title: 'Analytics', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="bar-chart" color={color} size={20} /> }} />
-      <Tabs.Screen name="feedback" options={{ title: 'Feedback', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="chatbox-ellipses" color={color} size={20} /> }} />
-      <Tabs.Screen name="ambassador-feedback" options={{ title: 'Ambassador', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="people-circle" color={color} size={20} /> }} />
-      <Tabs.Screen name="impact" options={{ title: 'Impact', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="pulse" color={color} size={20} /> }} />
-      <Tabs.Screen name="showcase" options={{ title: 'Showcase', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="star" color={color} size={20} /> }} />
-      <Tabs.Screen name="admin" options={{ title: 'Admin', tabBarIcon: ({ color }: { color: string }) => <Ionicons name="shield" color={color} size={20} /> }} />
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.brand ?? spark.blue,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: enabled
+          ? { display: 'none' }
+          : {
+              backgroundColor: spark.white,
+              borderTopColor: colors.border,
+              borderTopWidth: 0.5,
+              height: 84,
+              paddingTop: 10,
+              paddingBottom: 24,
+            },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
+        tabBarIconStyle: { marginBottom: 2 },
+      }}
+    >
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="home" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: 'Tasks',
+          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="checkmark-circle" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="calendar" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: 'Spark AI',
+          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="sparkles" color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="grid-outline" color={color} size={24} />,
+        }}
+      />
+
+      {/* Hidden from tab bar — accessible via More screen */}
+      <Tabs.Screen name="goals" options={{ href: null }} />
+      <Tabs.Screen name="messages" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="progress" options={{ href: null }} />
+      <Tabs.Screen name="growth" options={{ href: null }} />
+      <Tabs.Screen name="journey" options={{ href: null }} />
+      <Tabs.Screen name="portfolio" options={{ href: null }} />
+      <Tabs.Screen name="achievements" options={{ href: null }} />
+      <Tabs.Screen name="ambassador" options={{ href: null }} />
+      <Tabs.Screen name="analytics" options={{ href: null }} />
+      <Tabs.Screen name="feedback" options={{ href: null }} />
+      <Tabs.Screen name="ambassador-feedback" options={{ href: null }} />
+      <Tabs.Screen name="impact" options={{ href: null }} />
+      <Tabs.Screen name="showcase" options={{ href: null }} />
+      <Tabs.Screen name="admin" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

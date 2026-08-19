@@ -51,6 +51,15 @@ export default function AmbassadorScreen() {
     }
   }
 
+  const sorted = useMemo(
+    () =>
+      [...students].sort((a, b) => {
+        const priority = (s: AmbassadorStudentSupport) => (s.status === 'needs_attention' ? 0 : s.status === 'at_risk' ? 1 : s.status === 'active' ? 2 : 3);
+        return priority(a) - priority(b);
+      }),
+    [students]
+  );
+
   if (loading) {
     return (
       <AppShell title="Ambassador Workspace">
@@ -63,14 +72,6 @@ export default function AmbassadorScreen() {
 
   const needsAttention = students.filter((s) => s.status === 'needs_attention').length;
   const thriving = students.filter((s) => s.status === 'thriving').length;
-  const sorted = useMemo(
-    () =>
-      [...students].sort((a, b) => {
-        const priority = (s: AmbassadorStudentSupport) => (s.status === 'needs_attention' ? 0 : s.status === 'at_risk' ? 1 : s.status === 'active' ? 2 : 3);
-        return priority(a) - priority(b);
-      }),
-    [students]
-  );
 
   return (
     <AppShell title="Ambassador Workspace">

@@ -124,18 +124,6 @@ export default function DashboardScreen() {
     }
   }
 
-  if (loading && !user) {
-    return (
-      <AnimatedBackground>
-        <AppShell title="Dashboard" transparent>
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
-        </AppShell>
-      </AnimatedBackground>
-    );
-  }
-
   const xp = user?.xp ?? 0;
   const xpProgress = Math.min(100, (xp % NEXT_LEVEL_XP) / NEXT_LEVEL_XP * 100);
   const priority = computePriority(tasks, events, goals, user);
@@ -155,6 +143,18 @@ export default function DashboardScreen() {
     if (streak > 0) list.push({ message: `Your ${streak}-day streak is alive.`, icon: 'flame-outline' });
     return list;
   }, [xp, tasks.length, goals, events, opportunities, user?.streak?.current]);
+
+  if (loading && !user) {
+    return (
+      <AnimatedBackground>
+        <AppShell title="Dashboard" transparent>
+          <View style={styles.center}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        </AppShell>
+      </AnimatedBackground>
+    );
+  }
 
   return (
     <AnimatedBackground>

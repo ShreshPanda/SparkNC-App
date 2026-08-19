@@ -1,16 +1,24 @@
-import { Link } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePresentation } from '../providers/PresentationProvider';
 import { useTheme } from '../providers/ThemeProvider';
-import { spacing, typography } from '../theme';
+import { radius, spacing, typography } from '../theme';
 
 export function AppShell({ title, children, transparent }: { title: string; children: React.ReactNode; transparent?: boolean }) {
   const { colors } = useTheme();
   const { enabled } = usePresentation();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, !transparent && { backgroundColor: colors.background }, enabled && styles.containerPresentation]}>
+    <View
+      style={[
+        styles.container,
+        !transparent && { backgroundColor: colors.background },
+        enabled && styles.containerPresentation,
+        { paddingTop: insets.top + spacing.sm },
+      ]}
+    >
       {enabled ? (
         <View style={styles.demoHint}>
           <View style={[styles.demoPill, { backgroundColor: colors.highlight }]}>
@@ -19,21 +27,7 @@ export function AppShell({ title, children, transparent }: { title: string; chil
         </View>
       ) : null}
       <View style={styles.header}>
-        <Text style={[enabled ? styles.titleLarge : styles.title, { color: colors.foreground }]}>{title}</Text>
-        {!enabled ? (
-          <View style={styles.links}>
-            <Link href="/(tabs)/dashboard" asChild>
-              <Pressable>
-                <Text style={{ color: colors.accent }}>Dashboard</Text>
-              </Pressable>
-            </Link>
-            <Link href="/(tabs)/profile" asChild>
-              <Pressable>
-                <Text style={{ color: colors.accent }}>Profile</Text>
-              </Pressable>
-            </Link>
-          </View>
-        ) : null}
+        <Text style={[enabled ? styles.titleLarge : styles.title, { color: colors.brand ?? colors.foreground }]}>{title}</Text>
       </View>
       {children}
     </View>
@@ -43,11 +37,10 @@ export function AppShell({ title, children, transparent }: { title: string; chil
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg },
   containerPresentation: { padding: spacing.xl },
-  header: { marginBottom: spacing.xl, gap: spacing.sm },
+  header: { marginBottom: spacing.lg, gap: spacing.sm },
   title: { ...typography.title },
-  titleLarge: { ...typography.title, fontSize: 40, lineHeight: 48 },
-  links: { flexDirection: 'row', gap: spacing.md },
+  titleLarge: { ...typography.display },
   demoHint: { alignItems: 'center', marginBottom: spacing.md },
-  demoPill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 999 },
+  demoPill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
   demoPillText: { ...typography.caption, fontWeight: '700' },
 });
