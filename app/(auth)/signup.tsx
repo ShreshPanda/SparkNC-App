@@ -1,13 +1,13 @@
 import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { AnimatedBackground } from '../../components/AnimatedBackground';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
-import { GlassCard } from '../../components/GlassCard';
 import { SparkButton } from '../../components/SparkButton';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkOrb } from '../../components/visual/SparkOrb';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService } from '../../services/authService';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
 
 export default function SignupScreen() {
   const { colors } = useTheme();
@@ -37,55 +37,54 @@ export default function SignupScreen() {
   }
 
   return (
-    <AnimatedBackground>
-      <AppShell title="Create Account" transparent>
-        <View style={styles.card}>
-          <GlassCard intensity="high">
-            <Text style={[styles.heading, { color: colors.foreground }]}>Join SparkNC</Text>
-            {error && <Text style={[styles.error, { color: colors.highlight }]}>{error}</Text>}
-            <TextInput
-              style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="Full name"
-              placeholderTextColor={colors.muted}
-              value={name}
-              onChangeText={setName}
-            />
-            <TextInput
-              style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="Email"
-              placeholderTextColor={colors.muted}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TextInput
-              style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              placeholder="Password"
-              placeholderTextColor={colors.muted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <SparkButton title="Get started" onPress={handleRegister} loading={loading} disabled={!name.trim() || !email.trim() || !password.trim()} />
-            <Link href="/(auth)/login" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Sign in to existing account">
-                <Text style={[styles.link, { color: colors.accent }]}>Already have an account? Sign in</Text>
-              </Pressable>
-            </Link>
-          </GlassCard>
+    <AppShell title="Create Account" overline="SPARKNC" mode="atmospheric">
+      <View style={styles.container}>
+        <View style={styles.hero}>
+          <SparkOrb size={80} color={colors.primary} pulse={false} />
+          <Text style={[styles.title, { color: colors.foreground }]}>Join SparkNC</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>Build your spark with a community that grows with you.</Text>
         </View>
-      </AppShell>
-    </AnimatedBackground>
+
+        <View style={styles.card}>
+          <Text style={[styles.heading, { color: colors.foreground }]}>Create your account</Text>
+          {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
+          <SparkInput
+            placeholder="Full name"
+            value={name}
+            onChangeText={setName}
+          />
+          <SparkInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <SparkInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <SparkButton title="Get started" onPress={handleRegister} loading={loading} disabled={!name.trim() || !email.trim() || !password.trim()} />
+          <Link href="/(auth)/login" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel="Sign in to existing account">
+              <Text style={[styles.link, { color: colors.primary }]}>Already have an account? Sign in</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
+    </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.md, padding: spacing.lg, borderRadius: 20, borderWidth: 1 },
+  container: { flex: 1, justifyContent: 'center', padding: spacing.lg, gap: spacing.xl },
+  hero: { alignItems: 'center', gap: spacing.md },
+  title: { ...typography.title, textAlign: 'center' },
+  subtitle: { ...typography.body, textAlign: 'center' },
+  card: { gap: spacing.md, padding: spacing.lg, borderRadius: 24, borderWidth: 1 },
   heading: { ...typography.heading },
   error: { ...typography.body },
-  input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
-  button: { paddingVertical: spacing.md, borderRadius: 999, alignItems: 'center' },
-  buttonText: { color: colors.white, fontWeight: '700' },
   link: { textAlign: 'center', ...typography.body },
 });

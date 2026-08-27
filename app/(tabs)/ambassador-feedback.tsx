@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkSection } from '../../components/SparkSection';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -58,62 +64,66 @@ export default function AmbassadorFeedbackScreen() {
   }, []);
 
   return (
-    <AppShell title="Ambassador Feedback">
+    <AppShell title="Ambassador Feedback" overline="OBSERVE" mode="clean">
       <ScrollView contentContainerStyle={styles.container}>
-        {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
-        {success && <Text style={[styles.body, { color: colors.accent }]}>{success}</Text>}
+        {error && <Text style={[styles.body, { color: colors.error }]}>{error}</Text>}
+        {success && <Text style={[styles.body, { color: colors.success }]}>{success}</Text>}
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Student Observation</Text>
-          <TextInput
-            placeholder="Category"
-            placeholderTextColor={colors.muted}
-            value={category}
-            onChangeText={setCategory}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <TextInput
-            placeholder="Student ID (optional)"
-            placeholderTextColor={colors.muted}
-            value={studentId}
-            onChangeText={setStudentId}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <TextInput
-            placeholder="Describe what you observed"
-            placeholderTextColor={colors.muted}
-            multiline
-            value={observation}
-            onChangeText={setObservation}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
-          />
-          <TextInput
-            placeholder="Suggest a next step or resource (optional)"
-            placeholderTextColor={colors.muted}
-            multiline
-            value={suggestedImprovement}
-            onChangeText={setSuggestedImprovement}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
-          />
-          <SparkButton title="Submit Observation" onPress={submit} variant="primary" />
-        </View>
+        <SparkSection title="STUDENT OBSERVATION" inset={false}>
+          <SparkCard>
+            <SparkInput
+              placeholder="Category"
+              value={category}
+              onChangeText={setCategory}
+            />
+            <SparkInput
+              placeholder="Student ID (optional)"
+              value={studentId}
+              onChangeText={setStudentId}
+            />
+            <SparkInput
+              placeholder="Describe what you observed"
+              multiline
+              value={observation}
+              onChangeText={setObservation}
+              style={{ minHeight: 80 }}
+            />
+            <SparkInput
+              placeholder="Suggest a next step or resource (optional)"
+              multiline
+              value={suggestedImprovement}
+              onChangeText={setSuggestedImprovement}
+              style={{ minHeight: 80 }}
+            />
+            <SparkButton title="Submit Observation" onPress={submit} variant="primary" />
+          </SparkCard>
+        </SparkSection>
 
-        {loading ? <ActivityIndicator color={colors.accent} /> : null}
+        {loading ? <ActivityIndicator color={colors.primary} /> : null}
 
-        <View style={styles.section}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Your Observations</Text>
-          {items.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>No observations yet.</Text>
-          ) : (
-            items.map((item) => (
-              <View key={item.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={{ color: colors.foreground, ...typography.heading }}>{item.category}</Text>
-                <Text style={[styles.body, { color: colors.foreground }]}>{item.observation}</Text>
-                {item.suggestedImprovement ? <Text style={{ color: colors.accent }}>{item.suggestedImprovement}</Text> : null}
-              </View>
+        <SparkSection title="YOUR OBSERVATIONS" inset={false}>
+          <SparkCard variant="grouped">
+            {items.length === 0 ? (
+              <SparkEmptyState
+                icon={<Ionicons name="chatbubble-ellipses-outline" size={32} color={colors.primary} />}
+                title="No observations yet"
+                message="Record what you notice about students to help them grow."
+              />
+            ) : (
+              items.map((item) => (
+                <SparkListRow
+                  key={item.id}
+                  title={item.category}
+                  subtitle={item.observation}
+                icon="people-outline"
+                iconColor={colors.primary}
+                detail={item.suggestedImprovement ?? ''}
+                showChevron={false}
+              />
             ))
           )}
-        </View>
+          </SparkCard>
+        </SparkSection>
       </ScrollView>
     </AppShell>
   );
@@ -121,9 +131,5 @@ export default function AmbassadorFeedbackScreen() {
 
 const styles = StyleSheet.create({
   container: { gap: spacing.md, paddingBottom: spacing.xl },
-  card: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.sm },
-  section: { gap: spacing.sm },
-  heading: { ...typography.heading },
   body: { ...typography.body },
-  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md },
 });

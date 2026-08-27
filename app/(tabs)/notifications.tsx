@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppShell } from '../../components/AppShell';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -48,39 +53,54 @@ export default function NotificationsScreen() {
   }, []);
 
   return (
-    <AppShell title="Notifications">
-      <View style={{ flex: 1, gap: spacing.md }}>
-        {loading ? <ActivityIndicator color={colors.accent} /> : (
+    <AppShell title="Notifications" overline="ALERTS" mode="clean">
+      <View style={styles.container}>
+        {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+
+        {loading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : notifications.length === 0 ? (
+          <SparkEmptyState
+            icon={<Ionicons name="notifications-off-outline" size={32} color={colors.primary} />}
+            title="No notifications"
+            message="You're all caught up. We'll let you know when something important happens."
+          />
+        ) : (
           <FlatList
             data={notifications}
             keyExtractor={(item) => item.id}
-            ListEmptyComponent={<Text style={{ color: colors.muted }}>No notifications.</Text>}
+            contentContainerStyle={styles.list}
             renderItem={({ item }) => (
-              <View style={[styles.card, { backgroundColor: colors.card, opacity: item.isRead ? 0.7 : 1 }]}>
-                <Text style={[styles.heading, { color: colors.foreground }]}>{item.title}</Text>
-                <Text style={{ color: colors.muted }}>{item.body}</Text>
-                {!item.isRead ? (
-                  <Pressable onPress={() => markRead(item.id)} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Mark ${item.title} as read`}>
-                    <Text style={{ color: colors.foreground }}>Mark Read</Text>
-                  </Pressable>
-                ) : null}
-              </View>
+              <SparkListRow
+                title={item.title}
+                subtitle={item.body}
+                icon={item.isRead ? 'mail-open-outline' : 'mail-outline'}
+                iconColor={item.isRead ? colors.muted : colors.primary}
+                badge={!item.isRead ? 'New' : undefined}
+                badgeColor={!item.isRead ? colors.primary : undefined}
+                onPress={() => markRead(item.id)}
+                showChevron={false}
+                accessibilityLabel={`${item.title}. ${item.isRead ? 'Read' : 'Unread'}`}
+              />
             )}
           />
         )}
+
         {notifications.length > 0 ? (
-          <Pressable onPress={markAllRead} style={[styles.button, { backgroundColor: colors.muted }]} accessibilityRole="button" accessibilityLabel="Mark all notifications as read">
-            <Text style={{ color: colors.foreground }}>Mark All Read</Text>
-          </Pressable>
+          <View style={styles.footer}>
+            <SparkButton title="Mark All Read" onPress={markAllRead} variant="secondary" accessibilityLabel="Mark all notifications as read" />
+          </View>
         ) : null}
-        {error ? <Text style={{ color: colors.error }}>{error}</Text> : null}
       </View>
     </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
-  heading: { ...typography.heading },
-  button: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12, alignSelf: 'flex-start' },
+  container: { flex: 1, gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  list: { gap: spacing.xs },
+  footer: { marginTop: spacing.sm },
+  heading: { ...typography.title3 },
+  body: { ...typography.body },
+  error: { ...typography.body },
 });

@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
-import { AnimatedNumber } from '../../components/AnimatedNumber';
 import { FadeIn } from '../../components/AnimatedWrapper';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { EmptyGrowthIllustration } from '../../components/visual/EmptyIllustration';
 import { SparkButton } from '../../components/SparkButton';
 import { SparkCard } from '../../components/SparkCard';
+import { SparkMetric } from '../../components/SparkMetric';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
 import type { GrowthEvent, GrowthStatistics, GrowthStory } from '../../shared/types';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function GrowthTimelineScreen() {
   const { colors } = useTheme();
@@ -57,16 +59,16 @@ export default function GrowthTimelineScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Growth Timeline">
+      <AppShell title="Growth" overline="GROWTH" mode="immersive">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="Growth Timeline">
+    <AppShell title="Growth" overline="GROWTH" mode="immersive">
       <ScrollView contentContainerStyle={styles.container}>
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
@@ -75,12 +77,12 @@ export default function GrowthTimelineScreen() {
             <SparkCard>
               <Text style={[styles.heading, { color: colors.foreground }]}>Growth Statistics</Text>
               <View style={styles.statsGrid}>
-                <StatPill label="XP" value={stats.xp} color={colors.highlight} />
-                <StatPill label="Goals" value={stats.goalsCompleted} color={colors.accent} />
-                <StatPill label="Tasks" value={stats.tasksCompleted} color={colors.foreground} />
-                <StatPill label="Events" value={stats.eventsAttended} color={colors.muted} />
-                <StatPill label="Streak" value={stats.currentStreak} color={colors.highlight} />
-                <StatPill label="Achievements" value={stats.achievementsUnlocked} suffix={`/${stats.totalAchievements}`} color={colors.accent} />
+                <SparkMetric label="XP" value={stats.xp} color={colors.highlight} style={styles.metric} />
+                <SparkMetric label="Goals" value={stats.goalsCompleted} color={colors.primary} style={styles.metric} />
+                <SparkMetric label="Tasks" value={stats.tasksCompleted} color={colors.foreground} style={styles.metric} />
+                <SparkMetric label="Events" value={stats.eventsAttended} color={colors.muted} style={styles.metric} />
+                <SparkMetric label="Streak" value={stats.currentStreak} color={colors.highlight} style={styles.metric} />
+                <SparkMetric label="Achievements" value={stats.achievementsUnlocked} suffix={`/${stats.totalAchievements}`} color={colors.primary} style={styles.metric} />
               </View>
               <View style={styles.categories}>
                 {stats.categories.map((cat, i) => (
@@ -129,7 +131,11 @@ export default function GrowthTimelineScreen() {
           <SparkCard>
             <Text style={[styles.heading, { color: colors.foreground }]}>Milestones</Text>
             {events.length === 0 ? (
-              <EmptyState title="Your story is waiting to be told" message="Generate your growth timeline to see how far you've come." icon="time-outline" />
+              <SparkEmptyState
+                illustration={<EmptyGrowthIllustration />}
+                title="Your story is waiting to be told"
+                message="Generate your growth timeline to see how far you've come."
+              />
             ) : (
               events.map((event: GrowthEvent, i: number) => (
                 <View key={event.id} style={styles.timelineRow}>
@@ -159,27 +165,17 @@ export default function GrowthTimelineScreen() {
   );
 }
 
-function StatPill({ label, value, suffix = '', color }: { label: string; value: number; suffix?: string; color: string }) {
-  return (
-    <View style={styles.pill}>
-      <AnimatedNumber value={value} style={[styles.pillValue, { color }]} suffix={suffix} />
-      <Text style={styles.pillLabel}>{label}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  heading: { ...typography.heading },
+  heading: { ...typography.title2 },
   body: { ...typography.body },
-  lead: { ...typography.body, fontStyle: 'italic', marginBottom: spacing.md },
-  caption: { ...typography.caption },
+  lead: { ...typography.callout, marginBottom: spacing.md },
+  caption: { ...typography.footnote },
   error: { ...typography.body },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginVertical: spacing.md },
-  pill: { width: '30%', alignItems: 'center', padding: spacing.md },
-  pillValue: { ...typography.heading, fontSize: 20 },
-  pillLabel: { ...typography.caption, marginTop: spacing.xs },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: spacing.md },
+  metric: { width: '30%', marginBottom: spacing.md },
   categories: { gap: spacing.sm, marginTop: spacing.sm },
   categoryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progress: { height: 6, borderRadius: 3, flex: 1, overflow: 'hidden' },

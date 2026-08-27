@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppShell } from '../../components/AppShell';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -55,82 +61,75 @@ export default function CalendarScreen() {
   }, []);
 
   return (
-    <AppShell title="Calendar">
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.md }}>
+    <AppShell title="Calendar" overline="TIME" mode="clean">
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
+        {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+
         {loading ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
+        ) : events.length === 0 ? (
+          <SparkEmptyState
+            icon={<Ionicons name="calendar-outline" size={32} color={colors.primary} />}
+            title="No upcoming events"
+            message="Add an event or check back for new opportunities."
+          />
         ) : (
           <FlatList
             data={events}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
-            ListEmptyComponent={<Text style={{ color: colors.muted }}>No upcoming events.</Text>}
             renderItem={({ item }) => (
-              <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <SparkCard>
                 <Text style={[styles.heading, { color: colors.foreground }]}>{item.title}</Text>
-                <Text style={{ color: colors.muted }}>{item.startsAt}{item.endsAt ? ` - ${item.endsAt}` : ''}</Text>
-                {item.location ? <Text style={{ color: colors.muted }}>{item.location}</Text> : null}
+                <Text style={[styles.meta, { color: colors.muted }]}>{item.startsAt}{item.endsAt ? ` - ${item.endsAt}` : ''}</Text>
+                {item.location ? <Text style={[styles.meta, { color: colors.muted }]}>{item.location}</Text> : null}
                 <View style={styles.row}>
-                  <Text style={{ color: colors.foreground }}>{item.attendeeCount ?? 0} attending</Text>
-                  <Pressable
+                  <Text style={[styles.meta, { color: colors.foreground }]}>{item.attendeeCount ?? 0} attending</Text>
+                  <SparkButton
+                    title={item.isRegistered ? 'Registered' : 'RSVP'}
                     onPress={() => rsvp(item.id)}
-                    style={[styles.button, { backgroundColor: item.isRegistered ? colors.muted : colors.accent }]}
-                    accessibilityRole="button"
+                    variant={item.isRegistered ? 'secondary' : 'primary'}
                     accessibilityLabel={item.isRegistered ? 'Registered for event' : `RSVP to ${item.title}`}
-                  >
-                    <Text style={{ color: colors.foreground }}>{item.isRegistered ? 'Registered' : 'RSVP'}</Text>
-                  </Pressable>
+                  />
                 </View>
-              </View>
+              </SparkCard>
             )}
           />
         )}
 
-        {error ? <Text style={{ color: colors.error }}>{error}</Text> : null}
-
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <SparkCard>
           <Text style={[styles.heading, { color: colors.foreground }]}>Create Event</Text>
-          <TextInput
+          <SparkInput
             placeholder="Event title"
-            placeholderTextColor={colors.muted}
             value={form.title}
             onChangeText={(text) => setForm((f) => ({ ...f, title: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Start time, e.g. 2024-12-31T09:00"
-            placeholderTextColor={colors.muted}
             value={form.startsAt}
             onChangeText={(text) => setForm((f) => ({ ...f, startsAt: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="End time (optional)"
-            placeholderTextColor={colors.muted}
             value={form.endsAt}
             onChangeText={(text) => setForm((f) => ({ ...f, endsAt: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Location or room"
-            placeholderTextColor={colors.muted}
             value={form.location}
             onChangeText={(text) => setForm((f) => ({ ...f, location: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <Pressable onPress={create} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Create new event">
-            <Text style={{ color: colors.foreground }}>Create</Text>
-          </Pressable>
-        </View>
+          <SparkButton title="Create" onPress={create} accessibilityLabel="Create new event" />
+        </SparkCard>
       </ScrollView>
     </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
-  heading: { ...typography.heading },
+  container: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  heading: { ...typography.title3 },
+  meta: { ...typography.footnote },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
-  button: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12, alignSelf: 'flex-start' },
-  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md },
+  error: { ...typography.body },
 });

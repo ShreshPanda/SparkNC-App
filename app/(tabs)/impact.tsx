@@ -5,6 +5,10 @@ import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkCard } from '../../components/SparkCard';
+import { SparkMetric } from '../../components/SparkMetric';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkSection } from '../../components/SparkSection';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -68,9 +72,9 @@ export default function ImpactScreen() {
 
   if (loading && !impact) {
     return (
-      <AppShell title="Impact Dashboard">
+      <AppShell title="Impact Dashboard" overline="IMPACT" mode="data">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
@@ -81,114 +85,113 @@ export default function ImpactScreen() {
   const engagementRate = totalStudents > 0 ? Math.round((weeklyActive / totalStudents) * 100) : 0;
 
   return (
-    <AppShell title="Impact Dashboard">
+    <AppShell title="Impact Dashboard" overline="IMPACT" mode="data">
       <ScrollView contentContainerStyle={styles.container}>
-        {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
-        {success && <Text style={[styles.body, { color: colors.accent }]}>{success}</Text>}
+        {error && <Text style={[styles.body, { color: colors.error }]}>{error}</Text>}
+        {success && <Text style={[styles.body, { color: colors.success }]}>{success}</Text>}
 
         <FadeIn delay={0}>
-          <SparkCard style={[styles.hero, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.heroTitle, { color: colors.card }]}>Program impact</Text>
-            <Text style={[styles.heroBody, { color: colors.card }]}>
+          <View style={styles.hero}>
+            <Text style={[styles.heroTitle, { color: colors.foreground }]}>Program impact</Text>
+            <Text style={[styles.heroBody, { color: colors.muted }]}>
               {totalStudents} students · {weeklyActive} active · {engagementRate}% engagement · {impact ? Math.round(impact.studentExperience.averageSatisfaction) : 0}/5 satisfaction
             </Text>
-          </SparkCard>
+          </View>
         </FadeIn>
 
         <FadeIn delay={80}>
-          <SparkCard style={styles.kpiGrid}>
-            <KpiTile icon="people-outline" label="Students" value={totalStudents} colors={colors} />
-            <KpiTile icon="flame-outline" label="Active" value={weeklyActive} colors={colors} accent />
-            <KpiTile icon="checkmark-done-outline" label="Task rate" value={`${((impact?.engagement.taskCompletionRate ?? 0) * 100).toFixed(0)}%`} colors={colors} />
-            <KpiTile icon="trophy-outline" label="Goal rate" value={`${((impact?.engagement.goalCompletionRate ?? 0) * 100).toFixed(0)}%`} colors={colors} />
-            <KpiTile icon="calendar-outline" label="Event rate" value={`${((impact?.engagement.eventParticipationRate ?? 0) * 100).toFixed(0)}%`} colors={colors} />
-            <KpiTile icon="happy-outline" label="Satisfaction" value={`${impact ? Math.round(impact.studentExperience.averageSatisfaction) : 0}`} colors={colors} />
-          </SparkCard>
+          <SparkSection title="KEY METRICS" inset={false}>
+            <View style={styles.kpiRow}>
+              <SparkMetric label="Students" value={totalStudents} icon="people-outline" color={colors.primary} />
+              <SparkMetric label="Active" value={weeklyActive} icon="flame-outline" color={colors.success} />
+              <SparkMetric label="Task rate" value={Math.round((impact?.engagement.taskCompletionRate ?? 0) * 100)} suffix="%" icon="checkmark-done-outline" color={colors.primary} />
+              <SparkMetric label="Goal rate" value={Math.round((impact?.engagement.goalCompletionRate ?? 0) * 100)} suffix="%" icon="trophy-outline" color={colors.highlight} />
+              <SparkMetric label="Event rate" value={Math.round((impact?.engagement.eventParticipationRate ?? 0) * 100)} suffix="%" icon="calendar-outline" color={colors.info} />
+              <SparkMetric label="Satisfaction" value={impact ? Math.round(impact.studentExperience.averageSatisfaction) : 0} icon="happy-outline" color={colors.warning} />
+            </View>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={160}>
-          <SparkCard>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Feedback themes</Text>
-            {(impact?.studentExperience.topThemes ?? []).length === 0 ? (
-              <Text style={[styles.body, { color: colors.muted }]}>No themes yet.</Text>
-            ) : (
-              (impact?.studentExperience.topThemes ?? []).map((t, i) => (
-                <View key={i} style={styles.themeRow}>
-                  <Text style={[styles.themeCategory, { color: colors.foreground }]}>{t.category}</Text>
-                  <Text style={[styles.themeCount, { color: colors.accent }]}>{t.count}</Text>
-                </View>
-              ))
-            )}
-          </SparkCard>
+          <SparkSection title="FEEDBACK THEMES" inset={false}>
+            <SparkCard variant="grouped">
+              {(impact?.studentExperience.topThemes ?? []).length === 0 ? (
+                <SparkEmptyState
+                  icon={<Ionicons name="chatbubbles-outline" size={32} color={colors.primary} />}
+                  title="No themes yet"
+                  message="Feedback data will appear here once collected."
+                />
+              ) : (
+                (impact?.studentExperience.topThemes ?? []).map((t, i) => (
+                  <SparkListRow
+                    key={i}
+                    title={t.category}
+                    detail={`${t.count}`}
+                    icon="pricetag-outline"
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={240}>
-          <SparkCard>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Recommendations</Text>
-            {recommendations.length === 0 ? (
-              <Text style={[styles.body, { color: colors.muted }]}>No recommendations yet.</Text>
-            ) : (
-              recommendations.map((rec) => (
-                <View key={rec.id} style={styles.itemRow}>
-                  <Ionicons name="bulb-outline" size={16} color={colors.accent} />
-                  <Text style={[styles.itemText, { color: colors.foreground }]}>{rec.title}</Text>
-                </View>
-              ))
-            )}
+          <SparkSection title="RECOMMENDATIONS" inset={false}>
+            <SparkCard variant="grouped">
+              {recommendations.length === 0 ? (
+                <Text style={[styles.body, { color: colors.muted }]}>No recommendations yet.</Text>
+              ) : (
+                recommendations.map((rec) => (
+                  <SparkListRow
+                    key={rec.id}
+                    title={rec.title}
+                    icon="bulb-outline"
+                    iconColor={colors.primary}
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
             <SparkButton title="Generate Recommendations" onPress={generateRecommendations} variant="primary" />
-          </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={320}>
-          <SparkCard>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Reports</Text>
-            {reports.length === 0 ? (
-              <Text style={[styles.body, { color: colors.muted }]}>No impact reports yet.</Text>
-            ) : (
-              reports.map((r) => (
-                <View key={r.id} style={styles.itemRow}>
-                  <Ionicons name="document-text-outline" size={16} color={colors.muted} />
-                  <Text style={[styles.itemText, { color: colors.foreground }]}>{r.reportType} — {r.createdAt?.split('T')[0]}</Text>
-                </View>
-              ))
-            )}
+          <SparkSection title="REPORTS" inset={false}>
+            <SparkCard variant="grouped">
+              {reports.length === 0 ? (
+                <Text style={[styles.body, { color: colors.muted }]}>No impact reports yet.</Text>
+              ) : (
+                reports.map((r) => (
+                  <SparkListRow
+                    key={r.id}
+                    title={r.reportType}
+                    detail={r.createdAt?.split('T')[0]}
+                    icon="document-text-outline"
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
             <SparkButton title="Generate Monthly Report" onPress={generateReport} variant="primary" />
-          </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={400}>
-          <SparkButton title="Refresh" onPress={load} variant="muted" />
+          <SparkButton title="Refresh" onPress={load} variant="secondary" />
         </FadeIn>
       </ScrollView>
     </AppShell>
   );
 }
 
-function KpiTile({ icon, label, value, colors, accent }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string | number; colors: any; accent?: boolean }) {
-  return (
-    <View style={styles.kpi}>
-      <Ionicons name={icon} size={24} color={accent ? colors.accent : colors.muted} />
-      <Text style={[styles.kpiValue, { color: accent ? colors.accent : colors.foreground }]}>{value}</Text>
-      <Text style={[styles.kpiLabel, { color: colors.muted }]}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  hero: { padding: spacing.xl, borderRadius: 24, gap: spacing.sm },
-  heroTitle: { ...typography.title, fontSize: 28 },
+  hero: { gap: spacing.sm, marginBottom: spacing.md },
+  heroTitle: { ...typography.largeTitle },
   heroBody: { ...typography.body },
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, borderRadius: 20, gap: 0 },
-  kpi: { width: '33%', alignItems: 'center', padding: spacing.sm },
-  kpiValue: { ...typography.title },
-  kpiLabel: { ...typography.caption, textAlign: 'center' },
-  heading: { ...typography.heading },
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   body: { ...typography.body },
-  themeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
-  themeCategory: { ...typography.body },
-  themeCount: { ...typography.body, fontWeight: '700' },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  itemText: { ...typography.body },
 });

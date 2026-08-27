@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { useTheme } from '../providers/ThemeProvider';
-import { radius, shadows, spacing, spark } from '../theme';
+import { radius, shadows, spacing } from '../theme';
 
 type GlassCardProps = ViewProps & { intensity?: 'low' | 'medium' | 'high' };
 
@@ -9,18 +9,14 @@ export function GlassCard({ children, style, intensity = 'medium', ...rest }: Gl
   const { colors, mode } = useTheme();
   const isDark = mode === 'dark';
 
-  const alpha = intensity === 'high' ? 0.92 : intensity === 'low' ? 0.65 : 0.8;
-  const bgBase = isDark ? [20, 26, 46] : [255, 255, 255];
-  const backgroundColor = `rgba(${bgBase[0]}, ${bgBase[1]}, ${bgBase[2]}, ${alpha})`;
-
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor,
+          backgroundColor: colors.card,
           borderColor: colors.border,
-          shadowColor: spark.blue,
+          shadowColor: colors.border,
         },
         style,
       ]}
@@ -33,10 +29,10 @@ export function GlassCard({ children, style, intensity = 'medium', ...rest }: Gl
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.xxl,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    padding: spacing.xl,
-    ...shadows.md,
+    padding: spacing.lg,
+    ...shadows.sm,
     overflow: 'hidden',
   },
 });

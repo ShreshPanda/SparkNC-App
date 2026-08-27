@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useTheme } from '../providers/ThemeProvider';
-import { colors as rawColors } from '../theme/colors';
 
 interface AnimatedBackgroundProps {
   children: React.ReactNode;
@@ -45,9 +44,7 @@ export function AnimatedBackground({ children, intensity = 'medium' }: AnimatedB
     };
   }, []);
 
-  const palette = isDark
-    ? [colors.accent, colors.highlight, rawColors.info, rawColors.creative]
-    : ['#22c55e', '#fbbf24', '#3b82f6', '#a855f7'];
+  const palette = [colors.accent, colors.highlight, colors.success, colors.brand];
 
   const sizeBase = intensity === 'high' ? 420 : intensity === 'low' ? 260 : 340;
 

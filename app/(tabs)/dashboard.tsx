@@ -1,21 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, Vibration, View } from 'react-native';
-import { AnimatedBackground } from '../../components/AnimatedBackground';
-import { AnimatedNumber } from '../../components/AnimatedNumber';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, Vibration, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
 import { Confetti } from '../../components/Confetti';
-import { EmptyState } from '../../components/EmptyState';
 import { FadeIn } from '../../components/AnimatedWrapper';
-import { ProgressBar } from '../../components/ProgressBar';
-import { ProgressRing } from '../../components/ProgressRing';
+import { useRouter } from 'expo-router';
 import { SparkCard } from '../../components/SparkCard';
-import { StreakWidget } from '../../components/StreakWidget';
-import { TodaysSpark } from '../../components/TodaysSpark';
-import { XPWidget } from '../../components/XPWidget';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkMetric } from '../../components/SparkMetric';
+import { SparkBadge } from '../../components/SparkBadge';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkProgressRing } from '../../components/visual/SparkProgressRing';
+import { EmptyTasksIllustration } from '../../components/visual/EmptyIllustration';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService, type AuthSession } from '../../services/authService';
 import { cloudflareService } from '../../services/cloudflareService';
-import { colors, spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
 import type { Event, Goal, OpportunityRecommendation, SchoolIdentity, Task } from '../../shared/types';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -61,6 +61,7 @@ function computePriority(tasks: Task[], events: Event[], goals: Goal[], user: Au
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [user, setUser] = useState<AuthSession | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -128,229 +129,157 @@ export default function DashboardScreen() {
   const xpProgress = Math.min(100, (xp % NEXT_LEVEL_XP) / NEXT_LEVEL_XP * 100);
   const priority = computePriority(tasks, events, goals, user);
 
-  const insights = useMemo(() => {
-    const list: { message: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [];
-    const remaining = NEXT_LEVEL_XP - (xp % NEXT_LEVEL_XP);
-    list.push({ message: `You are ${remaining} XP from your next level.`, icon: 'trending-up-outline' });
-    if (tasks.length > 1) list.push({ message: `You have ${tasks.length} active tasks today.`, icon: 'checkmark-circle-outline' });
-    if (goals.length > 0) {
-      const top = goals.reduce((a, b) => (a.progress < b.progress ? a : b));
-      list.push({ message: `${top.title} is at ${top.progress}% — keep going.`, icon: 'flag-outline' });
-    }
-    if (events.length > 0) list.push({ message: `Upcoming: ${events[0].title} on ${events[0].startsAt ? events[0].startsAt.split('T')[0] : 'soon'}`, icon: 'calendar-outline' });
-    if (opportunities.length > 0) list.push({ message: `${opportunities[0].title} looks like a great fit.`, icon: 'compass-outline' });
-    const streak = user?.streak?.current ?? 0;
-    if (streak > 0) list.push({ message: `Your ${streak}-day streak is alive.`, icon: 'flame-outline' });
-    return list;
-  }, [xp, tasks.length, goals, events, opportunities, user?.streak?.current]);
 
   if (loading && !user) {
     return (
-      <AnimatedBackground>
-        <AppShell title="Dashboard" transparent>
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
-        </AppShell>
-      </AnimatedBackground>
+      <AppShell title="Dashboard" mode="atmospheric" transparent>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </AppShell>
     );
   }
 
   return (
-    <AnimatedBackground>
+    <AppShell
+      title={user ? getGreeting(user.name) : 'Welcome to SparkNC'}
+      overline="HOME"
+      mode="atmospheric"
+      trailing={
+        user && (user.streak?.current ?? 0) > 0 ? (
+          <SparkBadge label={`${user.streak.current} streak`} color={colors.yellow} icon="flame" size="sm" />
+        ) : null
+      }
+    >
       <Confetti active={confetti} onDone={() => setConfetti(false)} />
-      <AppShell title="Dashboard" transparent>
-        <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor={colors.primary}
+          />
+        }
+      >
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
         <FadeIn delay={0}>
-          <SparkCard style={[styles.priorityCard, { backgroundColor: colors.highlight }]} accessible accessibilityRole="header" accessibilityLabel={`Priority: ${priority.title}. ${priority.message}`}>
-            <View style={styles.priorityRow}>
-              <Ionicons name={priority.icon} size={28} color={colors.foreground} accessibilityLabel={priority.title} />
-              <View style={styles.priorityText}>
-                <Text style={[styles.priorityTitle, { color: colors.foreground }]}>{priority.title}</Text>
-                <Text style={[styles.priorityMessage, { color: colors.foreground }]}>{priority.message}</Text>
+          <View style={styles.heroCard}>
+            <SparkProgressRing progress={xpProgress / 100} size={96} stroke={8} color={colors.success} showGlow>
+              <View style={styles.ringText}>
+                <Text style={[styles.ringValue, { color: colors.foreground }]}>{Math.floor(xp / NEXT_LEVEL_XP)}</Text>
+                <Text style={[styles.ringLabel, { color: colors.muted }]}>LVL</Text>
               </View>
-              {priority.action ? <Text style={[styles.priorityAction, { color: colors.foreground }]}>{priority.action}</Text> : null}
+            </SparkProgressRing>
+            <View style={styles.heroText}>
+              <Text style={[styles.heroCaption, { color: colors.muted }]}>
+                {school ? school.mascot ?? school.name : user?.role ?? 'Student'}
+              </Text>
+              <Text style={[styles.heroXPLabel, { color: colors.foreground }]}>
+                {xp} <Text style={{ color: colors.muted }}>/ {NEXT_LEVEL_XP} XP</Text>
+              </Text>
+              <Text style={[styles.xpToNext, { color: colors.success }]}>
+                {NEXT_LEVEL_XP - (xp % NEXT_LEVEL_XP)} XP to next level
+              </Text>
             </View>
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={40}>
-          <SparkCard style={[styles.headerCard, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.title, { color: colors.card }]}>
-              {user ? getGreeting(user.name) : 'Welcome to SparkNC'}
-            </Text>
-            <Text style={[styles.body, { color: colors.muted }]}>
-              {user ? `${user.role} · ${user.xp ?? 0} XP` : 'Sign in to start tracking'}
-            </Text>
-            {school ? <Text style={[styles.caption, { color: colors.muted }]}>{school.name}{school.mascot ? ` · ${school.mascot}` : ''}</Text> : null}
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={80}>
-          <TodaysSpark insights={insights} />
-        </FadeIn>
-
-        <FadeIn delay={160}>
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <XPWidget xp={xp} nextLevel={NEXT_LEVEL_XP} />
-            </View>
-            <View style={styles.statCard}>
-              <StreakWidget current={user?.streak?.current ?? 0} longest={user?.streak?.longest} />
-            </View>
-            <SparkCard style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <AnimatedNumber value={tasks.length} style={[styles.statValue, { color: colors.foreground }]} />
-              <Text style={[styles.statLabel, { color: colors.muted }]}>Active</Text>
-            </SparkCard>
           </View>
         </FadeIn>
 
-        <FadeIn delay={240}>
-          <SparkCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>Level Progress</Text>
-              <Text style={[styles.caption, { color: colors.muted }]}>{Math.floor(xp / NEXT_LEVEL_XP)} → {Math.floor(xp / NEXT_LEVEL_XP) + 1}</Text>
-            </View>
-            <View style={styles.ringRow}>
-              <ProgressRing progress={xpProgress} size={100} strokeWidth={10} color={colors.accent} trackColor={colors.border} label={`${Math.round(xpProgress)}%`} />
-              <View style={styles.ringText}>
-                <Text style={[styles.body, { color: colors.foreground }]}>{NEXT_LEVEL_XP - (xp % NEXT_LEVEL_XP)} XP to next level</Text>
-                <Text style={[styles.caption, { color: colors.muted }]}>Keep the streak alive.</Text>
-              </View>
-            </View>
+        <FadeIn delay={80}>
+          <SparkCard variant="grouped">
+            <SparkListRow
+              title={priority.title}
+              subtitle={priority.message}
+              detail={priority.action}
+              icon={priority.icon}
+              iconBackground={colors.primarySoft}
+              onPress={() => router.push('/(tabs)/tasks')}
+            />
           </SparkCard>
         </FadeIn>
+
+        <FadeIn delay={160}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.heading, { color: colors.foreground }]}>Active Tasks</Text>
+            <Pressable onPress={() => router.push('/(tabs)/tasks')} accessibilityRole="button" accessibilityLabel="View all tasks">
+              <Text style={[styles.link, { color: colors.primary }]}>View all</Text>
+            </Pressable>
+          </View>
+          {tasks.length === 0 ? (
+            <SparkEmptyState
+              illustration={<EmptyTasksIllustration />}
+              title="Your day is wide open"
+              message="Add a task to start your streak."
+              action={{ label: 'Add a task', onPress: () => router.push('/(tabs)/tasks') }}
+            />
+          ) : (
+            <SparkCard variant="grouped">
+              {tasks.slice(0, 3).map((task, index) => (
+                <React.Fragment key={task.id}>
+                  <SparkListRow
+                    title={task.title}
+                    subtitle={`+${task.xpReward ?? 0} XP`}
+                    detail={pressedTask === task.id ? 'Completing…' : ''}
+                    icon="ellipse-outline"
+                    iconColor={colors.primary}
+                    onPress={() => completeTask(task)}
+                    showChevron={false}
+                  />
+                  {index < Math.min(tasks.length, 3) - 1 ? null : null}
+                </React.Fragment>
+              ))}
+            </SparkCard>
+          )}
+        </FadeIn>
+
+        {opportunities.length > 0 ? (
+          <FadeIn delay={240}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.heading, { color: colors.foreground }]}>Discover</Text>
+            </View>
+            <SparkCard variant="hero">
+              <Text style={[styles.oppTitle, { color: colors.foreground }]} numberOfLines={2}>{opportunities[0].title}</Text>
+              <Text style={[styles.oppWhy, { color: colors.muted }]} numberOfLines={2}>{opportunities[0].reason}</Text>
+              <SparkButton title="Explore" onPress={() => router.push('/(tabs)/more')} variant="secondary" style={{ marginTop: spacing.sm }} />
+            </SparkCard>
+          </FadeIn>
+        ) : null}
 
         <FadeIn delay={320}>
-          <SparkCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>Active Tasks</Text>
-              {tasks.length > 0 ? <Text style={[styles.caption, { color: colors.muted }]}>{tasks.length} remaining</Text> : null}
-            </View>
-            {tasks.length === 0 ? (
-              <EmptyState title="Your day is wide open" message="Head to the Tasks tab to add your first action." icon="checkmark-circle-outline" />
-            ) : (
-              tasks.map((task) => (
-                <Animated.View key={task.id} style={{ transform: [{ scale: pressedTask === task.id ? bounce : 1 }] }}>
-                  <Pressable onPress={() => completeTask(task)} style={styles.row} accessible accessibilityRole="button" accessibilityLabel={`Complete task ${task.title} for ${task.xpReward} XP`}>
-                    <View style={[styles.check, { borderColor: colors.accent }]} />
-                    <Text style={[styles.listItem, { color: colors.foreground, flex: 1 }]}>{task.title}</Text>
-                    <Text style={[styles.caption, { color: colors.accent }]}>+{task.xpReward ?? 0}</Text>
-                  </Pressable>
-                </Animated.View>
-              ))
-            )}
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={400}>
-          <SparkCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>Daily Goals</Text>
-            </View>
-            {goals.length === 0 ? (
-              <EmptyState title="No active goals" message="Set a goal to start building momentum." icon="flag-outline" />
-            ) : (
-              goals.map((goal) => (
-                <View key={goal.id} style={styles.goalRow}>
-                  <Text style={[styles.listItem, { color: colors.foreground, flex: 1 }]}>{goal.title}</Text>
-                  <View style={[styles.progress, { backgroundColor: colors.border }]}>
-                    <ProgressBar progress={goal.progress ?? 0} color={colors.accent} trackColor={colors.border} />
-                  </View>
-                  <AnimatedNumber value={goal.progress ?? 0} style={[styles.caption, { color: colors.muted, width: 40, textAlign: 'right' }]} suffix="%" />
-                </View>
-              ))
-            )}
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={480}>
-          <SparkCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>Upcoming Events</Text>
-            </View>
-            {events.length === 0 ? (
-              <EmptyState title="No upcoming events" message="Check the Calendar tab to find and RSVP to events." icon="calendar-outline" />
-            ) : (
-              events.map((event) => (
-                <View key={event.id} style={styles.row}>
-                  <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-                  <Text style={[styles.listItem, { color: colors.foreground, flex: 1 }]}>{event.title}</Text>
-                  <Text style={[styles.caption, { color: colors.muted }]}>{event.startsAt ? event.startsAt.split('T')[0] : ''}</Text>
-                </View>
-              ))
-            )}
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={520}>
-          <SparkCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>Opportunities for You</Text>
-            </View>
-            {opportunities.length === 0 ? (
-              <EmptyState title="No opportunities yet" message="Keep completing tasks and goals to unlock personalized recommendations." icon="compass-outline" />
-            ) : (
-              opportunities.map((op) => (
-                <View key={op.id} style={styles.opportunityRow}>
-                  <View style={styles.opportunityText}>
-                    <Text style={[styles.listItem, { color: colors.foreground }]}>{op.title}</Text>
-                    <Text style={[styles.caption, { color: colors.muted }]}>{op.reason}</Text>
-                  </View>
-                  <View style={[styles.scorePill, { backgroundColor: colors.border }]}>
-                    <Text style={[styles.caption, { color: colors.foreground, fontWeight: '700' }]}>{op.score}</Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </SparkCard>
-        </FadeIn>
-
-        <FadeIn delay={600}>
-          <Pressable onPress={() => load(true)} disabled={refreshing} style={[styles.refresh, { backgroundColor: colors.highlight }]}>
-            <Text style={styles.refreshText}>{refreshing ? 'Refreshing…' : 'Refresh'}</Text>
-          </Pressable>
+          <SparkButton title="Add a task" onPress={() => router.push('/(tabs)/tasks')} style={styles.addButton} />
         </FadeIn>
       </ScrollView>
     </AppShell>
-    </AnimatedBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  headerCard: { padding: spacing.xl, borderRadius: 24, gap: spacing.sm },
-  priorityCard: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
-  priorityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  priorityText: { flex: 1 },
-  priorityTitle: { ...typography.heading, fontSize: 16 },
-  priorityMessage: { ...typography.body },
-  priorityAction: { ...typography.caption, fontWeight: '700' },
-  title: { ...typography.title },
-  heading: { ...typography.heading },
-  body: { ...typography.body },
-  caption: { ...typography.caption },
   error: { ...typography.body },
-  statsRow: { flexDirection: 'row', gap: spacing.md },
-  statCard: { flex: 1, alignItems: 'center', padding: spacing.md },
-  statValue: { ...typography.heading, fontSize: 22 },
-  statLabel: { ...typography.caption },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  ringRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  ringText: { gap: spacing.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  check: { width: 20, height: 20, borderRadius: 10, borderWidth: 2 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  listItem: { ...typography.body },
-  goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  opportunityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  opportunityText: { flex: 1 },
-  scorePill: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 999, minWidth: 40, alignItems: 'center' },
-  progress: { height: 6, borderRadius: 3, flex: 1, overflow: 'hidden' },
-  progressFill: { height: '100%' },
-  refresh: { padding: spacing.md, borderRadius: 16, alignItems: 'center' },
-  refreshText: { color: colors.white, fontWeight: '700' },
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  heroText: { flex: 1, gap: spacing.xs },
+  heroCaption: { ...typography.footnote },
+  heroXPLabel: { ...typography.title2 },
+  xpToNext: { ...typography.caption1 },
+  ringText: { alignItems: 'center', justifyContent: 'center' },
+  ringValue: { ...typography.metric },
+  ringLabel: { ...typography.caption2 },
+  heading: { ...typography.title2 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  link: { ...typography.footnote, fontWeight: '600' },
+  oppTitle: { ...typography.headline },
+  oppWhy: { ...typography.subheadline },
+  addButton: { marginTop: spacing.md },
 });

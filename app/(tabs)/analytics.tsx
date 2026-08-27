@@ -5,6 +5,9 @@ import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkCard } from '../../components/SparkCard';
+import { SparkMetric } from '../../components/SparkMetric';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkSection } from '../../components/SparkSection';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -35,9 +38,9 @@ export default function AnalyticsScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Admin Analytics">
+      <AppShell title="Admin Analytics" overline="PROGRAM" mode="data">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
@@ -48,77 +51,66 @@ export default function AnalyticsScreen() {
   const engagementRate = totalStudents > 0 ? Math.round((weeklyActive / totalStudents) * 100) : 0;
 
   return (
-    <AppShell title="Admin Analytics">
+    <AppShell title="Admin Analytics" overline="PROGRAM" mode="data">
       <ScrollView contentContainerStyle={styles.container}>
-        {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
+        {error && <Text style={[styles.body, { color: colors.error }]}>{error}</Text>}
 
         <FadeIn delay={0}>
-          <SparkCard style={[styles.hero, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.heroTitle, { color: colors.card }]}>Program overview</Text>
-            <Text style={[styles.heroBody, { color: colors.card }]}>
+          <View style={styles.hero}>
+            <Text style={[styles.heroTitle, { color: colors.foreground }]}>Program overview</Text>
+            <Text style={[styles.heroBody, { color: colors.muted }]}>
               {totalStudents} students · {weeklyActive} active this week · {engagementRate}% weekly engagement
             </Text>
-          </SparkCard>
+          </View>
         </FadeIn>
 
         <FadeIn delay={80}>
-          <SparkCard style={styles.kpiGrid}>
-            <KpiTile icon="people-outline" label="Total students" value={totalStudents} colors={colors} />
-            <KpiTile icon="flame-outline" label="Active (7d)" value={weeklyActive} colors={colors} accent />
-            <KpiTile icon="pulse-outline" label="Active (24h)" value={metrics?.dailyActiveStudents ?? 0} colors={colors} />
-            <KpiTile icon="checkmark-done-outline" label="Tasks" value={metrics?.totalTasksCompleted ?? 0} colors={colors} />
-            <KpiTile icon="trophy-outline" label="Goals" value={metrics?.totalGoalsCompleted ?? 0} colors={colors} />
-            <KpiTile icon="calendar-outline" label="Events" value={metrics?.totalEventsAttended ?? 0} colors={colors} />
-          </SparkCard>
+          <SparkSection title="KEY METRICS" inset={false}>
+            <View style={styles.kpiRow}>
+              <SparkMetric label="Total students" value={totalStudents} icon="people-outline" color={colors.primary} />
+              <SparkMetric label="Active (7d)" value={weeklyActive} icon="flame-outline" color={colors.success} />
+              <SparkMetric label="Active (24h)" value={metrics?.dailyActiveStudents ?? 0} icon="pulse-outline" color={colors.info} />
+              <SparkMetric label="Tasks" value={metrics?.totalTasksCompleted ?? 0} icon="checkmark-done-outline" color={colors.primary} />
+              <SparkMetric label="Goals" value={metrics?.totalGoalsCompleted ?? 0} icon="trophy-outline" color={colors.highlight} />
+              <SparkMetric label="Events" value={metrics?.totalEventsAttended ?? 0} icon="calendar-outline" color={colors.info} />
+            </View>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={160}>
-          <SparkCard>
-            <Text style={[styles.heading, { color: colors.foreground }]}>XP Trend</Text>
-            {metrics?.xpTrend?.length === 0 ? (
-              <Text style={[styles.body, { color: colors.muted }]}>No recent XP data.</Text>
-            ) : (
-              metrics?.xpTrend?.map((point, i) => (
-                <View key={i} style={styles.trendRow}>
-                  <Text style={[styles.trendDate, { color: colors.muted }]}>{point.date}</Text>
-                  <Text style={[styles.trendValue, { color: colors.accent }]}>{point.xp} XP</Text>
-                </View>
-              ))
-            )}
-          </SparkCard>
+          <SparkSection title="XP TREND" inset={false}>
+            <SparkCard variant="grouped">
+              {metrics?.xpTrend?.length === 0 ? (
+                <Text style={[styles.body, { color: colors.muted }]}>No recent XP data.</Text>
+              ) : (
+                metrics?.xpTrend?.map((point, i) => (
+                  <SparkListRow
+                    key={i}
+                    title={point.date}
+                    detail={`${point.xp} XP`}
+                    icon="time-outline"
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={240}>
-          <SparkButton title="Refresh" onPress={load} variant="primary" />
+          <SparkButton title="Refresh" onPress={load} variant="secondary" />
         </FadeIn>
       </ScrollView>
     </AppShell>
   );
 }
 
-function KpiTile({ icon, label, value, colors, accent }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: number; colors: any; accent?: boolean }) {
-  return (
-    <View style={styles.kpi}>
-      <Ionicons name={icon} size={24} color={accent ? colors.accent : colors.muted} />
-      <Text style={[styles.kpiValue, { color: accent ? colors.accent : colors.foreground }]}>{value}</Text>
-      <Text style={[styles.kpiLabel, { color: colors.muted }]}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  hero: { padding: spacing.xl, borderRadius: 24, gap: spacing.sm },
-  heroTitle: { ...typography.title, fontSize: 28 },
+  hero: { gap: spacing.sm, marginBottom: spacing.md },
+  heroTitle: { ...typography.largeTitle },
   heroBody: { ...typography.body },
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, borderRadius: 20, gap: 0 },
-  kpi: { width: '33%', alignItems: 'center', padding: spacing.sm },
-  kpiValue: { ...typography.title },
-  kpiLabel: { ...typography.caption, textAlign: 'center' },
-  heading: { ...typography.heading },
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   body: { ...typography.body },
-  trendRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
-  trendDate: { ...typography.body },
-  trendValue: { ...typography.body, fontWeight: '700' },
 });

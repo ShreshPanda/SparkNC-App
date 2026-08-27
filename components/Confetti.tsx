@@ -10,10 +10,10 @@ interface ConfettiProps {
 
 const { width } = Dimensions.get('window');
 
-export function Confetti({ active, onDone, count = 40, duration = 2200 }: ConfettiProps) {
+export function Confetti({ active, onDone, count = 24, duration = 2200 }: ConfettiProps) {
   const anims = useRef<Animated.Value[]>([]);
   const particles = useMemo(() => {
-    const palette = ['#22c55e', '#fbbf24', '#3b82f6', '#a855f7', '#ef4444', '#0f172a'];
+    const palette = ['#08257C', '#FFD51F', '#00B86B'];
     return Array.from({ length: count }).map((_, i) => ({
       color: palette[i % palette.length],
       left: Math.random() * width,

@@ -1,5 +1,34 @@
 # Next Task
 
+## UI/UX Overhaul — "Spark Aura + Editorial Structure" (completed Phases 1–8)
+
+The Spark Aura + Editorial Structure redesign has been implemented through Phase 8. All remaining screens have been treated with the Spark Aura system, and all type checks and worker tests pass.
+
+- Implementation report: `docs/SPARKNC_V1_UI_IMPLEMENTATION_REPORT.md`
+- Phase 8 screen inventory: `docs/PHASE_8_SCREEN_INVENTORY.md`
+- Sprint state: `SPRINT_STATE.md`
+- Verified: `npm run typecheck`, `npm run typecheck:worker`, `npm run test:worker`
+
+### Completed in Phase 8
+
+- Screen inventory and visual-treatment status mapping.
+- Complete redesign of `portfolio.tsx`, `journey.tsx`, `calendar.tsx`, `progress.tsx`, `achievements.tsx`, `showcase.tsx`, `analytics.tsx`, `impact.tsx`, `messages.tsx`, `notifications.tsx`, `feedback.tsx`, `ambassador-feedback.tsx`, `onboarding.tsx`, and `signup.tsx`.
+- Application-wide visual QA pass: backgrounds, typography, spacing, components, empty/loading/error states, interaction, motion, iOS, accessibility, and real-data usage.
+- Role walkthroughs for Student, Ambassador, Leadership/Analytics, and Admin flows.
+
+### Phase 9 — Final Asset Pass (complete)
+
+- Audited `docs/SPARKNC_ASSET_PLAN.md` and implemented only materially missing assets.
+- Created `components/visual/EmptyIllustration.tsx` with code-generated visuals for `dashboard.tsx`, `growth.tsx`, `journey.tsx`, `portfolio.tsx`, and `achievements.tsx`.
+- Extended `SparkEmptyState` with optional `illustration` prop.
+- Reused existing visual primitives (`SparkOrb`, `SparkProgressRing`, `SparkGlow`, `SparkBackground`, `SparkAvatar`, `SparkBadge`) and app icon/splash PNGs.
+- Intentionally deferred non-essential assets (`SparkProgressPath`, `SparkDotField`, noise textures, `SparkWave`, `SparkStarburst`, opportunity fallback images).
+
+### Next steps
+
+1. Run final visual QA on iOS/Android simulators and adjust spacing/typography as needed.
+2. Proceed to deployment readiness per `docs/PRODUCTION_CHECKLIST.md`.
+
 ## Sprint 10 Part 2 — "The Spark That Stays" v1.0 (in progress)
 
 SparkNC is feature-complete and integrated. Sprint 10 Part 2 refined the product into a seamless, demo-ready experience. Demo Mode is now functional, accessibility coverage is stronger, and the final product review doc is in place. Remaining work: portfolio evolution, ambassador command center, leadership dashboards, community refinement, emotional experience review, and full role walkthroughs.

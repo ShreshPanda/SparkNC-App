@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
 import type { User } from '../../shared/types';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AdminScreen() {
   const { colors } = useTheme();
@@ -67,14 +71,18 @@ export default function AdminScreen() {
   }
 
   return (
-    <AppShell title="Admin">
+    <AppShell title="Admin" overline="CENTER" mode="clean">
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl }}>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <SparkCard>
           <Text style={[styles.heading, { color: colors.foreground }]}>User Management</Text>
           {loadingUsers ? (
-            <ActivityIndicator color={colors.accent} />
+            <ActivityIndicator color={colors.primary} />
           ) : users.length === 0 ? (
-            <EmptyState title="No users yet" message="Invite students and ambassadors to start building your community." icon="people-outline" />
+            <SparkEmptyState
+              icon={<Ionicons name="people-outline" size={32} color={colors.primary} />}
+              title="No users yet"
+              message="Invite students and ambassadors to start building your community."
+            />
           ) : (
             users.map((user) => (
               <View key={user.id} style={styles.userRow}>
@@ -85,77 +93,57 @@ export default function AdminScreen() {
               </View>
             ))
           )}
-        </View>
+        </SparkCard>
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <SparkCard>
           <Text style={[styles.heading, { color: colors.foreground }]}>Create Event</Text>
-          <TextInput
+          <SparkInput
             placeholder="Event title"
-            placeholderTextColor={colors.muted}
             value={event.title}
             onChangeText={(text) => setEvent((f) => ({ ...f, title: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Start time, e.g. 2024-12-31T09:00"
-            placeholderTextColor={colors.muted}
             value={event.startsAt}
             onChangeText={(text) => setEvent((f) => ({ ...f, startsAt: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="End time (optional)"
-            placeholderTextColor={colors.muted}
             value={event.endsAt}
             onChangeText={(text) => setEvent((f) => ({ ...f, endsAt: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Location or room"
-            placeholderTextColor={colors.muted}
             value={event.location}
             onChangeText={(text) => setEvent((f) => ({ ...f, location: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <Pressable onPress={createEvent} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Create event">
-            <Text style={{ color: colors.foreground }}>Create Event</Text>
-          </Pressable>
-        </View>
+          <SparkButton title="Create Event" onPress={createEvent} accessibilityLabel="Create event" />
+        </SparkCard>
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <SparkCard>
           <Text style={[styles.heading, { color: colors.foreground }]}>Create Announcement</Text>
-          <TextInput
+          <SparkInput
             placeholder="Announcement title"
-            placeholderTextColor={colors.muted}
             value={announcement.title}
             onChangeText={(text) => setAnnouncement((f) => ({ ...f, title: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Announcement message"
-            placeholderTextColor={colors.muted}
             value={announcement.body}
             onChangeText={(text) => setAnnouncement((f) => ({ ...f, body: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="Scope: global, school, or location"
-            placeholderTextColor={colors.muted}
             value={announcement.scope}
             onChangeText={(text) => setAnnouncement((f) => ({ ...f, scope: text as any }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <TextInput
+          <SparkInput
             placeholder="School ID (optional)"
-            placeholderTextColor={colors.muted}
             value={announcement.schoolId}
             onChangeText={(text) => setAnnouncement((f) => ({ ...f, schoolId: text }))}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted }]}
           />
-          <Pressable onPress={createAnnouncement} style={[styles.button, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Create announcement">
-            <Text style={{ color: colors.foreground }}>Create Announcement</Text>
-          </Pressable>
-        </View>
+          <SparkButton title="Create Announcement" onPress={createAnnouncement} accessibilityLabel="Create announcement" />
+        </SparkCard>
 
         {success ? <Text style={{ color: colors.success }}>{success}</Text> : null}
         {error ? <Text style={{ color: colors.error }}>{error}</Text> : null}
@@ -165,11 +153,8 @@ export default function AdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
-  heading: { ...typography.heading },
+  heading: { ...typography.title2, marginBottom: spacing.sm },
   body: { ...typography.body },
-  caption: { ...typography.caption },
+  caption: { ...typography.footnote },
   userRow: { paddingVertical: spacing.xs },
-  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md },
-  button: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12, alignSelf: 'flex-start' },
 });

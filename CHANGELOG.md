@@ -1,5 +1,88 @@
 # Changelog
 
+## [Unreleased] - Phase 9 — "Final Asset Pass"
+
+### Added
+
+- `components/visual/EmptyIllustration.tsx` with five code-generated, abstract empty-state visuals:
+  - `EmptyTasksIllustration` for `dashboard.tsx`.
+  - `EmptyGrowthIllustration` for `growth.tsx`.
+  - `EmptyJourneyIllustration` for `journey.tsx`.
+  - `EmptyPortfolioIllustration` for `portfolio.tsx`.
+  - `EmptyAchievementsIllustration` for `achievements.tsx`.
+- Optional `illustration` prop on `SparkEmptyState` for larger visuals while keeping `icon` support.
+
+### Changed
+
+- Reused existing visual primitives (`SparkOrb`, `SparkProgressRing`, `SparkGlow`, `SparkBackground`, `SparkAvatar`, `SparkBadge`) and app icon/splash PNGs.
+- Intentionally deferred non-essential assets (`SparkProgressPath`, `SparkDotField`, noise textures, `SparkWave`, `SparkStarburst`, opportunity fallback images) after audit.
+
+### Verified
+
+- `npm run typecheck` — pass
+- `npm run typecheck:worker` — pass
+- `npm run test:worker` — pass (6 tests)
+
+## [Unreleased] - Phase 8 — "Complete Screen Coverage + Visual QA"
+
+### Added
+
+- `docs/PHASE_8_SCREEN_INVENTORY.md` mapping all screens by role and treatment status.
+- Full Spark Aura treatment for remaining screens:
+  - `app/(tabs)/portfolio.tsx` — editorial mode, `SparkAvatar`, `SparkBadge`, `SparkEmptyState`.
+  - `app/(tabs)/journey.tsx` — editorial mode, timeline `SparkBadge`, `SparkEmptyState`.
+  - `app/(tabs)/calendar.tsx` — clean mode, `SparkInput`, `SparkEmptyState`.
+  - `app/(tabs)/progress.tsx` — immersive mode, `SparkMetric`, `SparkProgressRing`.
+  - `app/(tabs)/achievements.tsx` — immersive mode, `SparkBadge`, `SparkEmptyState`.
+  - `app/(tabs)/showcase.tsx` — data mode, `SparkMetric`, `SparkListRow`.
+  - `app/(tabs)/analytics.tsx` — data mode, `SparkMetric`, `SparkListRow`.
+  - `app/(tabs)/impact.tsx` — data mode, `SparkMetric`, `SparkListRow`.
+  - `app/(tabs)/messages.tsx` — clean mode, `SparkInput`, `SparkListRow`, `SparkEmptyState`.
+  - `app/(tabs)/notifications.tsx` — clean mode, `SparkListRow`, `SparkEmptyState`.
+  - `app/(tabs)/feedback.tsx` — clean mode, `SparkInput`, `SparkListRow`, `SparkEmptyState`.
+  - `app/(tabs)/ambassador-feedback.tsx` — clean mode, `SparkInput`, `SparkListRow`, `SparkEmptyState`.
+  - `app/onboarding.tsx` — atmospheric mode, `SparkInput`, `SparkOrb`.
+  - `app/(auth)/signup.tsx` — atmospheric mode, `SparkInput`, `SparkOrb`.
+
+### Changed
+
+- Removed all legacy `TextInput`, `EmptyState`, and `AnimatedBackground` usage from `app/`.
+- Standardized `colors.primary` for `ActivityIndicator` and key brand moments across redesigned screens.
+- Unified background modes, typography, spacing, and component usage per `docs/SPARKNC_SCREEN_DESIGNS.md`.
+
+### Verified
+
+- `npm run typecheck` — pass
+- `npm run typecheck:worker` — pass
+- `npm run test:worker` — pass (6 tests)
+
+## [Unreleased] - UI/UX Overhaul — "Spark Aura + Editorial Structure"
+
+### Added
+
+- Aura design system foundation with depth scales, translucent glows, and semantic tokens in `theme/colors.ts`.
+- New typography tokens (`Display`, `Secondary Body`, `Micro Label`) in `theme/typography.ts`.
+- Hero spacing and `space64` in `theme/spacing.ts`.
+- `theme/gradients.ts`, `theme/glow.ts`, `theme/backgrounds.ts`.
+- `editorial`, `metricLarge`, and `glass` surface presets in `theme/surfaces.ts`.
+- `components/visual/SparkBackground.tsx` supporting seven background modes with light/dark and reduced-motion support.
+- New visual primitives: `SparkOrb`, `SparkGlow`, `SparkProgressRing`, `SparkInput`, `SparkEmptyState`, `SparkAvatar`, `SparkBadge`, `SparkPill`, `SparkShimmer`, `SparkToast`, `SparkDivider`, `SparkHero`, `SparkSection`.
+- `docs/SPARKNC_V1_UI_IMPLEMENTATION_REPORT.md` and `SPRINT_STATE.md`.
+
+### Changed
+
+- Refactored `SparkButton`, `SparkCard`, `SparkListRow`, and `SparkMetric` with reanimated press feedback, theme tokens, and reduced-motion support.
+- Evolved `components/AppShell.tsx` to support `mode`, `overline`, and `trailing` props.
+- Updated `app/(tabs)/_layout.tsx` with iOS-style tab bar, safe-area insets, and active/filled icons.
+- Redesigned `dashboard.tsx`, `ai.tsx`, `tasks.tsx`, `goals.tsx`, `growth.tsx`, `more.tsx`, `settings.tsx`, `profile.tsx`, `login.tsx`, `ambassador.tsx`, and `admin.tsx` with Aura backgrounds and primitives.
+- Migrated `components/AnimatedWrapper.tsx` to `react-native-reanimated` with `useReducedMotion`.
+
+### Verified
+
+- `npm run typecheck` — pass
+- `npm run typecheck:worker` — pass
+- `npm run test:worker` — pass (6 tests)
+
 ## [Unreleased] - Sprint 10 — "The Complete Spark" (v1.0 Experience Completion)
 ### Added
 - Personalized `TodaysSpark` insights on `dashboard.tsx` driven by real tasks, goals, events, opportunities, and XP.

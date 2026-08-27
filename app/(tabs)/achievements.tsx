@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { EmptyAchievementsIllustration } from '../../components/visual/EmptyIllustration';
+import { SparkBadge } from '../../components/SparkBadge';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -45,44 +50,73 @@ export default function AchievementsScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Achievements">
+      <AppShell title="Achievements" overline="MILESTONES" mode="immersive">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
   }
 
+  const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
+
   return (
-    <AppShell title="Achievements">
+    <AppShell title="Achievements" overline="MILESTONES" mode="immersive">
       <ScrollView contentContainerStyle={styles.container}>
-        {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
+        {error && <Text style={[styles.body, { color: colors.error }]}>{error}</Text>}
+
+        <View style={styles.hero}>
+          <Text style={[styles.heroTitle, { color: colors.foreground }]}>{unlockedCount}</Text>
+          <Text style={[styles.heroBody, { color: colors.muted }]}>
+            {unlockedCount} of {achievements.length} unlocked
+          </Text>
+        </View>
 
         {achievements.length === 0 ? (
-          <Text style={[styles.body, { color: colors.muted }]}>No achievements available.</Text>
+          <SparkEmptyState
+            illustration={<EmptyAchievementsIllustration />}
+            title="No achievements yet"
+            message="Complete tasks, goals, and events to earn your first achievement."
+          />
         ) : (
           achievements.map((achievement: Achievement) => (
-            <View key={achievement.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: achievement.unlockedAt ? 1 : 0.6 }]}>
-              <Text style={[styles.heading, { color: colors.foreground }]}>{achievement.title}</Text>
+            <SparkCard
+              key={achievement.id}
+              style={[styles.card, { opacity: achievement.unlockedAt ? 1 : 0.6 }]}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={[styles.heading, { color: colors.foreground }]}>{achievement.title}</Text>
+                <SparkBadge
+                  label={achievement.unlockedAt ? 'Unlocked' : `Locked — ${achievement.points} XP`}
+                  color={achievement.unlockedAt ? colors.success : colors.muted}
+                  size="sm"
+                />
+              </View>
               <Text style={[styles.body, { color: colors.muted }]}>{achievement.description}</Text>
-              <Text style={[styles.caption, { color: achievement.unlockedAt ? colors.accent : colors.muted }]}>
-                {achievement.unlockedAt ? `Unlocked ${achievement.unlockedAt.split('T')[0]}` : `Locked - ${achievement.points} XP`}
-              </Text>
-            </View>
+              {achievement.unlockedAt ? (
+                <Text style={[styles.caption, { color: colors.primary }]}>
+                  Unlocked {achievement.unlockedAt.split('T')[0]}
+                </Text>
+              ) : null}
+            </SparkCard>
           ))
         )}
 
         <SparkButton title={checking ? 'Checking...' : 'Check for New Unlocks'} onPress={check} variant="primary" disabled={checking} />
-        <SparkButton title="Refresh" onPress={load} variant="muted" />
+        <SparkButton title="Refresh" onPress={load} variant="secondary" />
       </ScrollView>
     </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.sm },
+  hero: { gap: spacing.sm, marginBottom: spacing.md },
+  heroTitle: { ...typography.metricLarge },
+  heroBody: { ...typography.body },
+  card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   heading: { ...typography.heading },
   body: { ...typography.body },
   caption: { ...typography.caption },

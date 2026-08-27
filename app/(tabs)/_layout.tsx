@@ -1,66 +1,81 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePresentation } from '../../providers/PresentationProvider';
 import { useTheme } from '../../providers/ThemeProvider';
-import { spark } from '../../theme';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { enabled } = usePresentation();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand ?? spark.blue,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: enabled
           ? { display: 'none' }
           : {
-              backgroundColor: spark.white,
+              backgroundColor: colors.surface,
               borderTopColor: colors.border,
               borderTopWidth: 0.5,
-              height: 84,
-              paddingTop: 10,
-              paddingBottom: 24,
+              height: 72 + insets.bottom,
+              paddingBottom: insets.bottom + 8,
+              paddingTop: 8,
+              shadowColor: '#000',
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: -2 },
+              elevation: 0,
             },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
-        tabBarIconStyle: { marginBottom: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
       }}
     >
       <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="home" color={color} size={24} />,
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="tasks"
         options={{
           title: 'Tasks',
-          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="checkmark-circle" color={color} size={24} />,
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'checkmark-circle' : 'checkmark-circle-outline'} color={color} size={24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="calendar" color={color} size={24} />,
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="ai"
         options={{
-          title: 'Spark AI',
-          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="sparkles" color={color} size={24} />,
+          title: 'Spark',
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} color={color} size={24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
           title: 'More',
-          tabBarIcon: ({ color }: { color: string }) => <Ionicons name="grid-outline" color={color} size={24} />,
+          tabBarIcon: ({ color, focused }: { color: string; focused: boolean }) => (
+            <Ionicons name={focused ? 'grid' : 'grid-outline'} color={color} size={24} />
+          ),
         }}
       />
 

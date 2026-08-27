@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {  ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkCard } from '../../components/SparkCard';
-import { Skeleton } from '../../components/Skeleton';
+import { SparkMetric } from '../../components/SparkMetric';
+import { SparkSection } from '../../components/SparkSection';
+import { SparkListRow } from '../../components/SparkListRow';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -36,11 +39,9 @@ export default function ShowcaseScreen() {
 
   if (loading) {
     return (
-      <AppShell title="SparkNC Showcase">
+      <AppShell title="SparkNC Showcase" overline="DEMO" mode="data">
         <ScrollView contentContainerStyle={styles.container}>
-          <Skeleton height={180} borderRadius={20} />
-          <Skeleton height={120} borderRadius={20} />
-          <Skeleton height={160} borderRadius={20} />
+          <ActivityIndicator color={colors.primary} />
         </ScrollView>
       </AppShell>
     );
@@ -48,51 +49,82 @@ export default function ShowcaseScreen() {
 
   if (error || !scenario) {
     return (
-      <AppShell title="SparkNC Showcase">
-        <EmptyState title="Showcase unavailable" message={error ?? 'No demo data loaded.'} icon="sad-outline" />
-        <View style={styles.retry}>
+      <AppShell title="SparkNC Showcase" overline="DEMO" mode="data">
+        <ScrollView contentContainerStyle={styles.container}>
+          <SparkEmptyState
+            icon={<Ionicons name="sad-outline" size={32} color={colors.primary} />}
+            title="Showcase unavailable"
+            message={error ?? 'No demo data loaded.'}
+          />
           <SparkButton title="Retry" onPress={load} variant="primary" />
-        </View>
+        </ScrollView>
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="SparkNC Showcase">
+    <AppShell title="SparkNC Showcase" overline="DEMO" mode="data">
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.headline, { color: colors.foreground }]}>Leadership Demo</Text>
         <Text style={[styles.sub, { color: colors.muted }]}>See the student, ambassador, and admin experiences.</Text>
 
         <FadeIn delay={0}>
-          <SparkCard style={styles.section}>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Student Growth</Text>
-            {scenario.students.map((s: { id: string; name: string; xp: number; streak: number }) => (
-              <View key={s.id} style={styles.studentRow}>
-                <Text style={[styles.body, { color: colors.foreground }]}>{s.name}</Text>
-                <Text style={[styles.caption, { color: colors.muted }]}>Level {Math.floor(s.xp / 100) + 1} · {s.xp} XP · {s.streak} streak</Text>
-              </View>
-            ))}
-          </SparkCard>
+          <SparkSection title="STUDENT GROWTH" inset={false}>
+            <SparkCard variant="grouped">
+              {scenario.students.map((s: { id: string; name: string; xp: number; streak: number }) => (
+                <SparkListRow
+                  key={s.id}
+                  title={s.name}
+                  subtitle={`Level ${Math.floor(s.xp / 100) + 1}`}
+                  detail={`${s.xp} XP · ${s.streak} streak`}
+                  icon="person-outline"
+                  iconColor={colors.primary}
+                  showChevron={false}
+                />
+              ))}
+            </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={100}>
-          <SparkCard style={styles.section}>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Ambassador View</Text>
-            {scenario.ambassadorView.map((a) => (
-              <View key={a.studentId} style={styles.studentRow}>
-                <Text style={[styles.body, { color: colors.foreground }]}>{a.name}</Text>
-                <Text style={[styles.caption, { color: colors.muted }]}>{a.status} — {a.recommendation}</Text>
-              </View>
-            ))}
-          </SparkCard>
+          <SparkSection title="AMBASSADOR VIEW" inset={false}>
+            <SparkCard variant="grouped">
+              {scenario.ambassadorView.map((a) => (
+                <SparkListRow
+                  key={a.studentId}
+                  title={a.name}
+                  subtitle={a.status}
+                  detail={a.recommendation}
+                  icon="people-outline"
+                  iconColor={colors.success}
+                  showChevron={false}
+                />
+              ))}
+            </SparkCard>
+          </SparkSection>
         </FadeIn>
 
         <FadeIn delay={200}>
-          <SparkCard style={styles.section}>
-            <Text style={[styles.heading, { color: colors.foreground }]}>Admin Impact</Text>
-            <Text style={[styles.body, { color: colors.foreground }]}>{scenario.adminMetrics.totalStudents} students · {scenario.adminMetrics.activeThisMonth} active this month</Text>
-            <Text style={[styles.caption, { color: colors.muted }]}>Top improvement: {scenario.adminMetrics.topImprovement}</Text>
-          </SparkCard>
+          <SparkSection title="ADMIN IMPACT" inset={false}>
+            <View style={styles.kpiRow}>
+              <SparkMetric
+                label="Students"
+                value={scenario.adminMetrics.totalStudents}
+                icon="people-outline"
+                color={colors.primary}
+              />
+              <SparkMetric
+                label="Active this month"
+                value={scenario.adminMetrics.activeThisMonth}
+                icon="flame-outline"
+                color={colors.success}
+              />
+            </View>
+            <SparkCard>
+              <Text style={[styles.heading, { color: colors.foreground }]}>Top improvement</Text>
+              <Text style={[styles.body, { color: colors.muted }]}>{scenario.adminMetrics.topImprovement}</Text>
+            </SparkCard>
+          </SparkSection>
         </FadeIn>
       </ScrollView>
     </AppShell>
@@ -100,13 +132,10 @@ export default function ShowcaseScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xl },
-  headline: { ...typography.heading, fontSize: 24, marginBottom: spacing.sm },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
+  headline: { ...typography.title1, marginBottom: spacing.sm },
   sub: { ...typography.body, marginBottom: spacing.lg },
-  section: { marginBottom: spacing.md },
-  heading: { ...typography.heading, marginBottom: spacing.sm },
+  kpiRow: { flexDirection: 'row', gap: spacing.md },
+  heading: { ...typography.title2, marginBottom: spacing.sm },
   body: { ...typography.body },
-  caption: { ...typography.caption },
-  studentRow: { marginBottom: spacing.sm, gap: spacing.xs },
-  retry: { padding: spacing.lg },
 });

@@ -3,8 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AppShell } from '../../components/AppShell';
+import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
-import { radius, shadows, spacing, spark, typography } from '../../theme';
+import { radius, spacing, spark, typography } from '../../theme';
 
 type MenuItem = {
   title: string;
@@ -63,12 +64,12 @@ export default function MoreScreen() {
   ];
 
   return (
-    <AppShell title="More">
+    <AppShell title="More" overline="MENU" mode="clean">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {groups.map((group) => (
           <View key={group.heading} style={styles.group}>
             <Text style={[styles.groupHeading, { color: colors.muted }]}>{group.heading.toUpperCase()}</Text>
-            <View style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }, shadows.sm]}>
+            <SparkCard variant="grouped" style={styles.groupCard}>
               {group.items.map((item, index) => (
                 <Link key={item.title} href={item.href as never} asChild>
                   <Pressable
@@ -90,7 +91,7 @@ export default function MoreScreen() {
                   </Pressable>
                 </Link>
               ))}
-            </View>
+            </SparkCard>
           </View>
         ))}
         <View style={styles.footer}>
@@ -102,15 +103,15 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.xl, paddingBottom: spacing.xxxl },
+  container: { gap: spacing.xl, padding: spacing.lg, paddingBottom: spacing.xxxl },
   group: { gap: spacing.sm },
-  groupHeading: { ...typography.labelSmall, marginLeft: spacing.xs },
-  groupCard: { borderRadius: radius.xl, borderWidth: 0.5, overflow: 'hidden' },
+  groupHeading: { ...typography.caption1, marginLeft: spacing.xs, fontWeight: '600' as const },
+  groupCard: { borderRadius: radius.xl },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.md + 2, gap: spacing.md },
   iconCircle: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1, gap: 2 },
   rowTitle: { ...typography.bodyMedium, fontWeight: '600' as const },
-  rowSubtitle: { ...typography.caption },
+  rowSubtitle: { ...typography.footnote },
   footer: { alignItems: 'center', paddingTop: spacing.lg },
-  footerText: { ...typography.caption, fontWeight: '600' },
+  footerText: { ...typography.footnote, fontWeight: '600' },
 });

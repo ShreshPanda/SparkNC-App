@@ -1,28 +1,34 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, type ViewProps } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, type ViewProps } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, useReducedMotion } from 'react-native-reanimated';
 
-export function FadeIn({ children, delay = 0, style, ...rest }: ViewProps & { delay?: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(12)).current;
+interface FadeInProps extends ViewProps {
+  delay?: number;
+  children: React.ReactNode;
+}
+
+export function FadeIn({ children, delay = 0, style, ...rest }: FadeInProps) {
+  const reduceMotion = useReducedMotion();
+  const opacity = useSharedValue(reduceMotion ? 1 : 0);
+  const translateY = useSharedValue(reduceMotion ? 0 : 12);
 
   useEffect(() => {
-    const animation = Animated.timing(opacity, {
-      toValue: 1,
-      duration: 400,
-      delay,
-      useNativeDriver: true,
-    });
-    const slide = Animated.timing(translateY, {
-      toValue: 0,
-      duration: 400,
-      delay,
-      useNativeDriver: true,
-    });
-    Animated.parallel([animation, slide]).start();
-  }, [opacity, translateY, delay]);
+    if (reduceMotion) {
+      opacity.value = 1;
+      translateY.value = 0;
+      return;
+    }
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400 }));
+    translateY.value = withDelay(delay, withTiming(0, { duration: 400 }));
+  }, [opacity, translateY, delay, reduceMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }, style]} {...rest}>
+    <Animated.View style={[styles.container, animatedStyle, style]} {...rest}>
       {children}
     </Animated.View>
   );

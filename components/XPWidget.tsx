@@ -18,12 +18,12 @@ export function XPWidget({ xp, nextLevel, label = 'XP' }: XPWidgetProps) {
   return (
     <SparkCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.row}>
-        <AnimatedNumber value={xp} style={[styles.value, { color: colors.highlight }]} suffix=" XP" />
+        <AnimatedNumber value={xp} style={[styles.value, { color: colors.accent }]} suffix=" XP" />
         <Text style={[styles.label, { color: colors.muted }]}>{label}</Text>
       </View>
       {nextLevel ? (
         <View style={[styles.track, { backgroundColor: colors.border }]}>
-          <View style={[styles.fill, { width: `${progress}%`, backgroundColor: colors.highlight }]} />
+          <View style={[styles.fill, { width: `${progress}%`, backgroundColor: colors.accent }]} />
         </View>
       ) : null}
     </SparkCard>

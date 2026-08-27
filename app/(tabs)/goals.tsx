@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
 import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkBadge } from '../../components/SparkBadge';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { colors, spacing, typography } from '../../theme';
+import { radius, spacing, spark, typography } from '../../theme';
 import type { Goal, GrowthStatistics } from '../../shared/types';
+import { Ionicons } from '@expo/vector-icons';
 
 type SuggestedGoal = {
   id: string;
@@ -129,59 +135,49 @@ export default function GoalsScreen() {
   function renderSuggestion(s: SuggestedGoal) {
     if (dismissed.includes(s.id)) return null;
     return (
-      <View key={s.id} style={[styles.suggestion, { backgroundColor: colors.highlight + '20', borderColor: colors.highlight }]}>
-        <Text style={[styles.itemTitle, { color: colors.foreground }]}>{s.title}</Text>
-        <Text style={[styles.body, { color: colors.muted }]}>{s.description}</Text>
-        <Text style={[styles.caption, { color: colors.highlight }]}>{s.reason}</Text>
-        <View style={styles.suggestionActions}>
-          <Pressable onPress={() => handleAccept(s)} style={[styles.suggestionButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Accept suggestion ${s.title}`}>
-            <Text style={styles.suggestionButtonText}>Accept</Text>
-          </Pressable>
-          <Pressable onPress={() => handleDismiss(s.id)} style={[styles.suggestionButton, { backgroundColor: colors.border }]} accessibilityRole="button" accessibilityLabel={`Dismiss suggestion ${s.title}`}>
-            <Text style={[styles.suggestionButtonText, { color: colors.foreground }]}>Dismiss</Text>
-          </Pressable>
+      <SparkCard
+        key={s.id}
+        style={{
+          backgroundColor: `${colors.yellow}15`,
+          borderColor: colors.yellow,
+          padding: spacing.md,
+          borderRadius: radius.xl,
+          gap: spacing.xs,
+        }}
+      >
+        <View style={styles.suggestionHeader}>
+          <Text style={[styles.itemTitle, { color: colors.foreground }]}>{s.title}</Text>
+          <SparkBadge label={s.reason} color={colors.yellow} size="sm" />
         </View>
-      </View>
+        <Text style={[styles.body, { color: colors.muted }]}>{s.description}</Text>
+        <View style={styles.suggestionActions}>
+          <SparkButton title="Accept" onPress={() => handleAccept(s)} variant="success" style={{ flex: 1 }} />
+          <SparkButton title="Dismiss" onPress={() => handleDismiss(s.id)} variant="secondary" style={{ flex: 1 }} />
+        </View>
+      </SparkCard>
     );
   }
 
   function renderItem({ item }: { item: Goal }) {
     return (
-      <View style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.row}>
-          <Text style={[styles.itemTitle, { color: colors.foreground }]}>{item.title}</Text>
-          {item.completed && <Text style={[styles.badge, { color: colors.accent }]}>Done</Text>}
-        </View>
-        {item.description ? <Text style={[styles.body, { color: colors.muted }]}>{item.description}</Text> : null}
-        <Text style={[styles.caption, { color: colors.muted }]}>Progress: {item.progress}%</Text>
-        <View style={styles.actions}>
-          {!item.completed && (
-            <SparkButton title="Complete" onPress={() => handleComplete(item.id)} variant="primary" accessibilityLabel={`Complete ${item.title}`} />
-          )}
-          <SparkButton title="Delete" onPress={() => handleDelete(item.id)} variant="secondary" accessibilityLabel={`Delete ${item.title}`} />
-        </View>
-      </View>
+      <SparkListRow
+        title={item.title}
+        subtitle={item.description}
+        detail={`${item.progress}%`}
+        icon={item.completed ? 'checkmark-circle' : 'flag'}
+        iconColor={item.completed ? colors.success : colors.primary}
+        showChevron={false}
+        onPress={() => { if (!item.completed) handleComplete(item.id); }}
+      />
     );
   }
 
   return (
-    <AppShell title="Goals">
+    <AppShell title="Goals" overline="GROWTH" mode="editorial">
       <View style={styles.form}>
-        <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="What do you want to achieve?"
-          placeholderTextColor={colors.muted}
-          value={title}
-          onChangeText={setTitle}
-        />
-        <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Why does this matter to you?"
-          placeholderTextColor={colors.muted}
-          value={description}
-          onChangeText={setDescription}
-        />
-        <SparkButton title="Add goal" onPress={() => handleAdd()} variant="primary" accessibilityLabel="Add new goal" />
+        <SparkInput placeholder="What do you want to achieve?" value={title} onChangeText={setTitle} />
+        <SparkInput placeholder="Why does this matter to you?" value={description} onChangeText={setDescription} />
+        <SparkButton title="Add goal" onPress={() => handleAdd()} accessibilityLabel="Add new goal" />
       </View>
 
       {suggestions.length > 0 && (
@@ -192,14 +188,20 @@ export default function GoalsScreen() {
       )}
 
       {loading && goals.length === 0 ? (
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={colors.primary} />
       ) : (
         <FlatList
           data={goals}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={[styles.body, { color: colors.muted }]}>No goals yet</Text>}
+          ListEmptyComponent={
+            <SparkEmptyState
+              icon={<Ionicons name="flag-outline" size={32} color={colors.primary} />}
+              title="No goals yet"
+              message="Set a goal to grow your impact."
+            />
+          }
         />
       )}
     </AppShell>
@@ -208,19 +210,11 @@ export default function GoalsScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: spacing.sm, marginBottom: spacing.md },
-  input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
-  heading: { ...typography.heading, marginBottom: spacing.sm },
+  heading: { ...typography.title2, marginBottom: spacing.sm },
   suggestionsSection: { gap: spacing.md, marginBottom: spacing.md },
-  suggestion: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
+  suggestionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   suggestionActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  suggestionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12 },
-  suggestionButtonText: { color: colors.white, fontWeight: '700' },
-  list: { gap: spacing.md, paddingBottom: spacing.xl },
-  item: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemTitle: { ...typography.heading },
+  list: { paddingBottom: spacing.xxl },
+  itemTitle: { ...typography.headline },
   body: { ...typography.body },
-  caption: { ...typography.caption },
-  badge: { ...typography.caption },
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
 });

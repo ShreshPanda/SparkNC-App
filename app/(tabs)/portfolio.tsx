@@ -3,9 +3,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { EmptyPortfolioIllustration } from '../../components/visual/EmptyIllustration';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkCard } from '../../components/SparkCard';
+import { SparkSection } from '../../components/SparkSection';
+import { SparkAvatar } from '../../components/SparkAvatar';
+import { SparkBadge } from '../../components/SparkBadge';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService, type PortfolioRecord, type PortfolioSummary } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -35,9 +39,9 @@ export default function PortfolioScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Portfolio">
+      <AppShell title="Portfolio" overline="YOUR STORY" mode="editorial">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
@@ -77,7 +81,7 @@ export default function PortfolioScreen() {
   ].filter((s) => s.items.length > 0);
 
   return (
-    <AppShell title="Portfolio">
+    <AppShell title="Portfolio" overline="YOUR STORY" mode="editorial">
       <ScrollView contentContainerStyle={styles.container}>
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
@@ -94,50 +98,52 @@ export default function PortfolioScreen() {
         </FadeIn>
 
         {!hasAny ? (
-          <EmptyState
+          <SparkEmptyState
+            illustration={<EmptyPortfolioIllustration />}
             title="Your portfolio is ready to grow"
             message="Finish tasks, goals, and events to show your progress here."
-            icon="briefcase-outline"
+            action={{ label: 'Refresh', onPress: load }}
           />
         ) : (
           <>
             {sections.map((s, i) => (
               <FadeIn key={s.title} delay={80 + i * 40}>
-                <Section title={s.title} icon={s.icon} items={s.items} colors={colors} />
+                <SparkSection title={s.title} inset={false}>
+                  <SparkCard variant="grouped" style={styles.sectionCard}>
+                    <SectionContent title={s.title} icon={s.icon} items={s.items} />
+                  </SparkCard>
+                </SparkSection>
               </FadeIn>
             ))}
           </>
         )}
 
         <FadeIn delay={500}>
-          <SparkButton title="Refresh" onPress={load} variant="primary" />
+          <SparkButton title="Refresh" onPress={load} variant="secondary" />
         </FadeIn>
       </ScrollView>
     </AppShell>
   );
 }
 
-function Section({ title, icon, items, colors }: { title: string; icon: React.ComponentProps<typeof Ionicons>['name']; items: PortfolioRecord[]; colors: any }) {
+function SectionContent({ title, icon, items }: { title: string; icon: React.ComponentProps<typeof Ionicons>['name']; items: PortfolioRecord[] }) {
+  const { colors } = useTheme();
   const isTags = title === 'Skills' || title === 'Badges';
   return (
-    <SparkCard style={styles.section}>
+    <View>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Ionicons name={icon} size={20} color={colors.accent} />
+          <Ionicons name={icon} size={20} color={colors.primary} />
           <Text style={[styles.heading, { color: colors.foreground }]}>{title}</Text>
         </View>
-        <View style={[styles.countPill, { backgroundColor: colors.highlight }]}>
-          <Text style={[styles.countText, { color: colors.foreground }]}>{items.length}</Text>
-        </View>
+        <SparkBadge label={`${items.length}`} color={colors.primary} size="sm" />
       </View>
       {items.length === 0 ? (
         <Text style={[styles.empty, { color: colors.muted }]}>Nothing here yet.</Text>
       ) : isTags ? (
         <View style={styles.tagRow}>
           {items.map((item) => (
-            <View key={`${item.type}-${item.title}`} style={[styles.tag, { backgroundColor: colors.border }]}>
-              <Text style={[styles.tagText, { color: colors.foreground }]}>{item.title}</Text>
-            </View>
+            <SparkBadge key={`${item.type}-${item.title}`} label={item.title} color={colors.border} />
           ))}
         </View>
       ) : (
@@ -149,30 +155,26 @@ function Section({ title, icon, items, colors }: { title: string; icon: React.Co
           </View>
         ))
       )}
-    </SparkCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md },
+  container: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   hero: { padding: spacing.xl, borderRadius: 24, gap: spacing.sm },
-  heroTitle: { ...typography.title, fontSize: 28 },
+  heroTitle: { ...typography.title1 },
   heroBody: { ...typography.body },
-  heroCaption: { ...typography.caption },
-  section: { padding: spacing.md, borderRadius: 20, gap: spacing.sm },
+  heroCaption: { ...typography.footnote },
+  sectionCard: { padding: spacing.md, borderRadius: 20, gap: spacing.sm },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  heading: { ...typography.heading },
-  countPill: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 999, minWidth: 28, alignItems: 'center' },
-  countText: { ...typography.caption, fontWeight: '700' },
+  heading: { ...typography.title3 },
   empty: { ...typography.body },
   item: { paddingVertical: spacing.xs },
-  itemTitle: { ...typography.body, fontWeight: '600' },
+  itemTitle: { ...typography.headline },
   itemDesc: { ...typography.body },
-  itemDate: { ...typography.caption },
+  itemDate: { ...typography.footnote },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  tag: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 999 },
-  tagText: { ...typography.caption },
   error: { ...typography.body },
 });

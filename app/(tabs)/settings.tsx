@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkListRow } from '../../components/SparkListRow';
 import { usePresentation } from '../../providers/PresentationProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService } from '../../services/authService';
 import { cloudflareService } from '../../services/cloudflareService';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
 import type { NotificationPreference } from '../../shared/types';
 
 const defaultPrefs: NotificationPreference = {
@@ -75,32 +76,40 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Settings">
+      <AppShell title="Settings" overline="ACCOUNT" mode="clean">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
   }
+
+  const notificationOptions: { label: string; field: keyof NotificationPreference }[] = [
+    { label: 'Deadline reminders', field: 'sendDeadlines' },
+    { label: 'Streak alerts', field: 'sendStreakAlerts' },
+    { label: 'Event updates', field: 'sendEvents' },
+    { label: 'Message alerts', field: 'sendMessages' },
+    { label: 'Recommendations', field: 'sendRecommendations' },
+  ];
 
   return (
     <AppShell title="Settings">
       <ScrollView contentContainerStyle={styles.container}>
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
         {saved ? <Text style={[styles.success, { color: colors.success }]}>Saved</Text> : null}
-        {saving ? <Text style={[styles.body, { color: colors.muted }]}>Saving…</Text> : null}
+        {saving ? <Text style={[styles.footnote, { color: colors.muted }]}>Saving…</Text> : null}
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <SparkCard variant="grouped">
           <Text style={[styles.heading, { color: colors.foreground }]}>Notification Preferences</Text>
+          {notificationOptions.map((opt, index) => (
+            <React.Fragment key={opt.field}>
+              <ToggleRow label={opt.label} value={prefs[opt.field] as boolean} onValueChange={toggle(opt.field)} colors={colors} />
+              {index < notificationOptions.length - 1 ? <View style={[styles.separator, { backgroundColor: colors.border }]} /> : null}
+            </React.Fragment>
+          ))}
+        </SparkCard>
 
-          <ToggleRow label="Deadline reminders" value={prefs.sendDeadlines} onValueChange={toggle('sendDeadlines')} colors={colors} />
-          <ToggleRow label="Streak alerts" value={prefs.sendStreakAlerts} onValueChange={toggle('sendStreakAlerts')} colors={colors} />
-          <ToggleRow label="Event updates" value={prefs.sendEvents} onValueChange={toggle('sendEvents')} colors={colors} />
-          <ToggleRow label="Message alerts" value={prefs.sendMessages} onValueChange={toggle('sendMessages')} colors={colors} />
-          <ToggleRow label="Recommendations" value={prefs.sendRecommendations} onValueChange={toggle('sendRecommendations')} colors={colors} />
-        </View>
-
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <SparkCard variant="grouped">
           <Text style={[styles.heading, { color: colors.foreground }]}>Presentation</Text>
           <ToggleRow
             label="Presentation mode"
@@ -109,16 +118,21 @@ export default function SettingsScreen() {
             colors={colors}
           />
           <Text style={[styles.caption, { color: colors.muted }]}>
-            Enlarges headers and hides navigation links while presenting.
+            Enlarges headers and hides navigation while presenting.
           </Text>
-        </View>
+        </SparkCard>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <SparkCard variant="grouped">
           <Text style={[styles.heading, { color: colors.foreground }]}>Account</Text>
-          <Pressable onPress={logout} style={[styles.button, { backgroundColor: colors.highlight }]}>
-            <Text style={styles.buttonText}>Sign out</Text>
-          </Pressable>
-        </View>
+          <SparkListRow
+            title="Sign out"
+            icon="log-out-outline"
+            iconColor={colors.error}
+            iconBackground={colors.errorSoft}
+            showChevron={false}
+            onPress={logout}
+          />
+        </SparkCard>
       </ScrollView>
     </AppShell>
   );
@@ -138,21 +152,20 @@ function ToggleRow({
   return (
     <View style={styles.row}>
       <Text style={[styles.body, { color: colors.foreground }]}>{label}</Text>
-      <Switch value={value} onValueChange={onValueChange} thumbColor={colors.accent} trackColor={{ false: colors.border, true: colors.accent }} />
+      <Switch value={value} onValueChange={onValueChange} thumbColor={colors.primary} trackColor={{ false: colors.border, true: colors.primary }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.md },
-  heading: { ...typography.heading },
+  heading: { ...typography.title2, padding: spacing.lg, paddingBottom: spacing.md },
   body: { ...typography.body },
-  caption: { ...typography.caption },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
-  button: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12, alignSelf: 'flex-start' },
-  buttonText: { color: colors.white, fontWeight: '700' },
-  success: { ...typography.body },
-  error: { ...typography.body },
+  footnote: { ...typography.footnote },
+  caption: { ...typography.footnote, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: spacing.lg },
+  success: { ...typography.footnote },
+  error: { ...typography.footnote },
 });

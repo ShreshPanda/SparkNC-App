@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppShell } from '../../components/AppShell';
-import { EmptyState } from '../../components/EmptyState';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkBadge } from '../../components/SparkBadge';
+import { SparkAvatar } from '../../components/SparkAvatar';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkButton } from '../../components/SparkButton';
 import { SparkCard } from '../../components/SparkCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, spark, typography } from '../../theme';
 import type { AmbassadorStudentSupport } from '../../shared/types';
 
 const ACTIONS = [
@@ -62,9 +64,9 @@ export default function AmbassadorScreen() {
 
   if (loading) {
     return (
-      <AppShell title="Ambassador Workspace">
+      <AppShell title="Ambassador" overline="LEADERSHIP" mode="editorial">
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </AppShell>
     );
@@ -74,32 +76,39 @@ export default function AmbassadorScreen() {
   const thriving = students.filter((s) => s.status === 'thriving').length;
 
   return (
-    <AppShell title="Ambassador Workspace">
+    <AppShell title="Ambassador" overline="LEADERSHIP" mode="editorial">
       <ScrollView contentContainerStyle={styles.container}>
         {error ? <Text style={[styles.body, { color: colors.error }]}>{error}</Text> : null}
 
         <FadeIn delay={0}>
           <SparkCard style={[styles.summary, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.summaryTitle, { color: colors.card }]}>Today's focus</Text>
-            <Text style={[styles.summaryBody, { color: colors.card }]}>
+            <Text style={[styles.summaryTitle, { color: spark.white }]}>Today's focus</Text>
+            <Text style={[styles.summaryBody, { color: spark.white }]}>
               {students.length === 0 ? 'No assigned students yet.' : `${needsAttention} need attention · ${thriving} thriving`}
             </Text>
           </SparkCard>
         </FadeIn>
 
         {students.length === 0 ? (
-          <EmptyState title="No assigned students" message="Check back once students are matched with you." icon="people-outline" />
+          <SparkEmptyState
+            icon={<Ionicons name="people-outline" size={32} color={colors.primary} />}
+            title="No assigned students"
+            message="Check back once students are matched with you."
+          />
         ) : (
           sorted.map((item: AmbassadorStudentSupport, i: number) => (
             <FadeIn key={item.student.id} delay={80 + i * 60}>
-              <SparkCard style={styles.card}>
+              <SparkCard>
                 <View style={styles.studentHeader}>
-                  <Text style={[styles.heading, { color: colors.foreground }]}>{item.student.name ?? item.student.email ?? item.student.id}</Text>
-                  <View style={[styles.statusPill, { backgroundColor: statusColor(item.status, colors) }]}>
-                    <Text style={[styles.statusText, { color: colors.foreground }]}>{item.status}</Text>
+                  <View style={styles.studentMeta}>
+                    <SparkAvatar name={item.student.name ?? 'Student'} size="md" />
+                    <View>
+                      <Text style={[styles.heading, { color: colors.foreground }]}>{item.student.name ?? item.student.email ?? item.student.id}</Text>
+                      <Text style={[styles.body, { color: colors.muted }]}>{item.reason}</Text>
+                    </View>
                   </View>
+                  <SparkBadge label={item.status} color={statusColor(item.status, colors)} size="sm" />
                 </View>
-                <Text style={[styles.body, { color: colors.muted }]}>{item.reason}</Text>
                 <View style={styles.metaRow}>
                   <Ionicons name="flame-outline" size={14} color={colors.muted} />
                   <Text style={[styles.body, { color: colors.muted }]}>{item.stats.xp} XP</Text>
@@ -108,11 +117,11 @@ export default function AmbassadorScreen() {
                   <Ionicons name="checkmark-circle-outline" size={14} color={colors.muted} />
                   <Text style={[styles.body, { color: colors.muted }]}>{item.stats.tasksCompleted} tasks</Text>
                 </View>
-                <Text style={[styles.caption, { color: colors.accent }]}>Suggested: {item.suggestedAction}</Text>
+                <Text style={[styles.caption, { color: colors.primary }]}>Suggested: {item.suggestedAction}</Text>
                 <View style={styles.actions}>
                   {ACTIONS.map((a) => (
-                    <Pressable key={a.key} onPress={() => sendAction(item.student.id, a.body, a.key)} style={[styles.actionButton, { backgroundColor: colors.border }]} accessibilityRole="button" accessibilityLabel={`${a.label} ${item.student.name ?? item.student.email ?? 'student'}`}>
-                      <Text style={[styles.actionText, { color: sent[`${item.student.id}-${a.key}`] ? colors.accent : colors.foreground }]}>
+                    <Pressable key={a.key} onPress={() => sendAction(item.student.id, a.body, a.key)} style={[styles.actionButton, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]} accessibilityRole="button" accessibilityLabel={`${a.label} ${item.student.name ?? item.student.email ?? 'student'}`}>
+                      <Text style={[styles.actionText, { color: sent[`${item.student.id}-${a.key}`] ? colors.primary : colors.foreground }]}>
                         {sent[`${item.student.id}-${a.key}`] ?? a.label}
                       </Text>
                     </Pressable>
@@ -147,20 +156,20 @@ function statusColor(status: string, colors: any): string {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md, padding: spacing.md, paddingBottom: spacing.xl },
+  container: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   summary: { padding: spacing.lg, borderRadius: 24, gap: spacing.sm },
-  summaryTitle: { ...typography.title, fontSize: 24 },
+  summaryTitle: { ...typography.title1 },
   summaryBody: { ...typography.body },
-  card: { padding: spacing.lg, borderRadius: 20, gap: spacing.sm },
   studentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  heading: { ...typography.heading },
+  studentMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  heading: { ...typography.title2 },
   body: { ...typography.body },
-  caption: { ...typography.caption, fontWeight: '600' },
+  caption: { ...typography.footnote, fontWeight: '600' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginTop: spacing.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
-  actionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12 },
-  actionText: { ...typography.caption, fontWeight: '700' },
+  actionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+  actionText: { ...typography.footnote, fontWeight: '700' },
   statusPill: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: 999 },
-  statusText: { ...typography.caption, fontWeight: '700' },
+  statusText: { ...typography.footnote, fontWeight: '700' },
 });

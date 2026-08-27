@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
+import { SparkButton } from '../../components/SparkButton';
+import { SparkCard } from '../../components/SparkCard';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
-import { colors, spacing, typography } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 import type { Task } from '../../shared/types';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TasksScreen() {
   const { colors } = useTheme();
@@ -65,65 +71,42 @@ export default function TasksScreen() {
 
   function renderItem({ item }: { item: Task }) {
     return (
-      <View style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.row}>
-          <Text style={[styles.itemTitle, { color: colors.foreground }]}>{item.title}</Text>
-          {item.completed && <Text style={[styles.badge, { color: colors.accent }]}>Done</Text>}
-        </View>
-        {item.description ? <Text style={[styles.body, { color: colors.muted }]}>{item.description}</Text> : null}
-        {item.category ? <Text style={[styles.caption, { color: colors.muted }]}>{item.category}</Text> : null}
-        <View style={styles.actions}>
-          {!item.completed && (
-            <Pressable onPress={() => handleComplete(item.id)} style={[styles.actionButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel={`Complete ${item.title}`}>
-              <Text style={styles.actionButtonText}>Complete</Text>
-            </Pressable>
-          )}
-          <Pressable onPress={() => handleDelete(item.id)} style={[styles.actionButton, { backgroundColor: colors.highlight }]} accessibilityRole="button" accessibilityLabel={`Delete ${item.title}`}>
-            <Text style={styles.actionButtonText}>Delete</Text>
-          </Pressable>
-        </View>
-      </View>
+      <SparkListRow
+        title={item.title}
+        subtitle={item.description || item.category}
+        detail={item.completed ? 'Done' : `+${item.xpReward ?? 0}`}
+        icon={item.completed ? 'checkmark-circle' : 'ellipse-outline'}
+        iconColor={item.completed ? colors.success : colors.primary}
+        showChevron={false}
+        onPress={() => { if (!item.completed) handleComplete(item.id); }}
+      />
     );
   }
 
   return (
-    <AppShell title="Tasks">
+    <AppShell title="Tasks" mode="editorial">
       <View style={styles.form}>
-        <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="What do you need to do?"
-          placeholderTextColor={colors.muted}
-          value={title}
-          onChangeText={setTitle}
-        />
-        <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Add a few details"
-          placeholderTextColor={colors.muted}
-          value={description}
-          onChangeText={setDescription}
-        />
-        <TextInput
-          style={[styles.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-          placeholder="Category, e.g. Homework, Club, Wellness"
-          placeholderTextColor={colors.muted}
-          value={category}
-          onChangeText={setCategory}
-        />
-        <Pressable onPress={handleAdd} style={[styles.addButton, { backgroundColor: colors.accent }]} accessibilityRole="button" accessibilityLabel="Add new task">
-          <Text style={styles.addButtonText}>Add task</Text>
-        </Pressable>
+        <SparkInput placeholder="What do you need to do?" value={title} onChangeText={setTitle} />
+        <SparkInput placeholder="Add a few details" value={description} onChangeText={setDescription} />
+        <SparkInput placeholder="Category, e.g. Homework, Club, Wellness" value={category} onChangeText={setCategory} />
+        <SparkButton title="Add task" onPress={handleAdd} style={styles.add} />
       </View>
 
       {loading && tasks.length === 0 ? (
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={colors.primary} />
       ) : (
         <FlatList
           data={tasks}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={[styles.body, { color: colors.muted }]}>No tasks yet</Text>}
+          ListEmptyComponent={
+            <SparkEmptyState
+              icon={<Ionicons name="checkmark-circle-outline" size={32} color={colors.primary} />}
+              title="No tasks yet"
+              message="Add your first task to start earning XP."
+            />
+          }
         />
       )}
     </AppShell>
@@ -131,18 +114,7 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  form: { gap: spacing.sm, marginBottom: spacing.md },
-  input: { padding: spacing.md, borderRadius: 12, borderWidth: 1 },
-  list: { gap: spacing.md, paddingBottom: spacing.xl },
-  item: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemTitle: { ...typography.heading },
-  body: { ...typography.body },
-  caption: { ...typography.caption },
-  badge: { ...typography.caption },
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  actionButton: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 12 },
-  actionButtonText: { color: colors.white, fontWeight: '700' },
-  addButton: { paddingVertical: spacing.md, borderRadius: 16, alignItems: 'center' },
-  addButtonText: { color: colors.white, fontWeight: '700' },
+  form: { gap: spacing.sm, marginBottom: spacing.lg },
+  add: { marginTop: spacing.sm },
+  list: { paddingBottom: spacing.xxl },
 });

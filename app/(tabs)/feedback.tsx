@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SparkButton } from "../../components/SparkButton";
 import { AppShell } from '../../components/AppShell';
 import { FadeIn } from '../../components/AnimatedWrapper';
 import { SparkCard } from '../../components/SparkCard';
+import { SparkInput } from '../../components/SparkInput';
+import { SparkListRow } from '../../components/SparkListRow';
+import { SparkEmptyState } from '../../components/SparkEmptyState';
+import { SparkSection } from '../../components/SparkSection';
 import { useTheme } from '../../providers/ThemeProvider';
 import { cloudflareService } from '../../services/cloudflareService';
 import { spacing, typography } from '../../theme';
@@ -90,100 +94,116 @@ export default function FeedbackScreen() {
   }, []);
 
   return (
-    <AppShell title="Feedback Center">
+    <AppShell title="Feedback Center" overline="SHARE" mode="clean">
       <ScrollView contentContainerStyle={styles.container}>
-        {error && <Text style={[styles.body, { color: colors.highlight }]}>{error}</Text>}
-        {success && <Text style={[styles.body, { color: colors.accent }]}>{success}</Text>}
+        {error && <Text style={[styles.body, { color: colors.error }]}>{error}</Text>}
+        {success && <Text style={[styles.body, { color: colors.success }]}>{success}</Text>}
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Submit Feedback</Text>
-          <TextInput
-            placeholder="Feedback topic, e.g. App, Events, Learning"
-            placeholderTextColor={colors.muted}
-            value={category}
-            onChangeText={setCategory}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <TextInput
-            placeholder="Rating 1–5"
-            placeholderTextColor={colors.muted}
-            keyboardType="numeric"
-            value={rating}
-            onChangeText={setRating}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <TextInput
-            placeholder="What did you like? What can we improve?"
-            placeholderTextColor={colors.muted}
-            multiline
-            value={feedbackText}
-            onChangeText={setFeedbackText}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
-          />
-          <SparkButton title="Submit Feedback" onPress={submitFeedback} variant="primary" />
-        </View>
+        <FadeIn delay={0}>
+          <SparkSection title="SUBMIT FEEDBACK" inset={false}>
+            <SparkCard>
+              <SparkInput
+                placeholder="Feedback topic, e.g. App, Events, Learning"
+                value={category}
+                onChangeText={setCategory}
+              />
+              <SparkInput
+                placeholder="Rating 1–5"
+                keyboardType="numeric"
+                value={rating}
+                onChangeText={setRating}
+              />
+              <SparkInput
+                placeholder="What did you like? What can we improve?"
+                multiline
+                value={feedbackText}
+                onChangeText={setFeedbackText}
+                style={{ minHeight: 80 }}
+              />
+              <SparkButton title="Submit Feedback" onPress={submitFeedback} variant="primary" />
+            </SparkCard>
+          </SparkSection>
+        </FadeIn>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Suggest a Feature</Text>
-          <TextInput
-            placeholder="Feature idea title"
-            placeholderTextColor={colors.muted}
-            value={title}
-            onChangeText={setTitle}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <TextInput
-            placeholder="Describe the idea and why it would help"
-            placeholderTextColor={colors.muted}
-            multiline
-            value={description}
-            onChangeText={setDescription}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card, minHeight: 80 }]}
-          />
-          <TextInput
-            placeholder="Idea category, e.g. App, Events, Learning"
-            placeholderTextColor={colors.muted}
-            value={requestCategory}
-            onChangeText={setRequestCategory}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.muted, backgroundColor: colors.card }]}
-          />
-          <SparkButton title="Submit Idea" onPress={submitFeature} variant="primary" />
-        </View>
+        <FadeIn delay={80}>
+          <SparkSection title="SUGGEST A FEATURE" inset={false}>
+            <SparkCard>
+              <SparkInput
+                placeholder="Feature idea title"
+                value={title}
+                onChangeText={setTitle}
+              />
+              <SparkInput
+                placeholder="Describe the idea and why it would help"
+                multiline
+                value={description}
+                onChangeText={setDescription}
+                style={{ minHeight: 80 }}
+              />
+              <SparkInput
+                placeholder="Idea category, e.g. App, Events, Learning"
+                value={requestCategory}
+                onChangeText={setRequestCategory}
+              />
+              <SparkButton title="Submit Idea" onPress={submitFeature} variant="primary" />
+            </SparkCard>
+          </SparkSection>
+        </FadeIn>
 
-        {loading ? <ActivityIndicator color={colors.accent} /> : null}
+        {loading ? <ActivityIndicator color={colors.primary} /> : null}
 
-        <View style={styles.section}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Your Feedback</Text>
-          {myFeedback.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>You haven't shared feedback yet.</Text>
-          ) : (
-            myFeedback.map((f) => (
-              <View key={f.id} style={[styles.rowCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={{ color: colors.foreground }}>{f.category}</Text>
-                <Text style={{ color: colors.muted }}>{f.sentiment}{f.rating ? ` - ${f.rating}/5` : ''}</Text>
-                {f.feedbackText ? <Text style={[styles.body, { color: colors.foreground }]}>{f.feedbackText}</Text> : null}
-              </View>
-            ))
-          )}
-        </View>
+        <FadeIn delay={160}>
+          <SparkSection title="YOUR FEEDBACK" inset={false}>
+            <SparkCard variant="grouped">
+              {myFeedback.length === 0 ? (
+                <SparkEmptyState
+                  icon={<Ionicons name="chatbubble-outline" size={32} color={colors.primary} />}
+                  title="No feedback yet"
+                  message="Share your thoughts to help improve SparkNC."
+                />
+              ) : (
+                myFeedback.map((f) => (
+                  <SparkListRow
+                    key={f.id}
+                    title={f.category}
+                    subtitle={f.feedbackText ?? 'No details'}
+                    detail={f.rating ? `${f.rating}/5` : f.sentiment}
+                    icon="chatbubble-ellipses-outline"
+                    iconColor={colors.primary}
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
+          </SparkSection>
+        </FadeIn>
 
-        <View style={styles.section}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Ideas Board</Text>
-          {featureRequests.length === 0 ? (
-            <Text style={[styles.body, { color: colors.muted }]}>No ideas submitted yet. Be the first!</Text>
-          ) : (
-            featureRequests.map((r) => (
-              <View key={r.id} style={[styles.rowCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={{ color: colors.foreground }}>{r.title}</Text>
-                <Text style={{ color: colors.muted }}>{r.category} • {r.status}</Text>
-                <View style={styles.voteRow}>
-                  <Text style={{ color: colors.foreground }}>{r.votes} votes</Text>
-                  <SparkButton title="Vote" onPress={() => vote(r.id)} variant="primary" />
-                </View>
-              </View>
-            ))
-          )}
-        </View>
+        <FadeIn delay={240}>
+          <SparkSection title="IDEAS BOARD" inset={false}>
+            <SparkCard variant="grouped">
+              {featureRequests.length === 0 ? (
+                <SparkEmptyState
+                    icon={<Ionicons name="bulb-outline" size={32} color={colors.primary} />}
+                    title="No ideas yet"
+                    message="Be the first to suggest a feature."
+                  />
+              ) : (
+                featureRequests.map((r) => (
+                  <SparkListRow
+                    key={r.id}
+                    title={r.title}
+                    subtitle={r.category}
+                    detail={`${r.votes} votes`}
+                    icon="bulb-outline"
+                    iconColor={colors.primary}
+                    onPress={() => vote(r.id)}
+                    showChevron={false}
+                  />
+                ))
+              )}
+            </SparkCard>
+          </SparkSection>
+        </FadeIn>
       </ScrollView>
     </AppShell>
   );
@@ -191,11 +211,5 @@ export default function FeedbackScreen() {
 
 const styles = StyleSheet.create({
   container: { gap: spacing.md, paddingBottom: spacing.xl },
-  card: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.sm },
-  section: { gap: spacing.sm },
-  heading: { ...typography.heading },
   body: { ...typography.body },
-  input: { borderWidth: 1, borderRadius: 12, padding: spacing.md },
-  rowCard: { padding: spacing.md, borderRadius: 16, borderWidth: 1, gap: spacing.xs },
-  voteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
 });
