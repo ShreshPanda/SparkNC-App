@@ -34,10 +34,12 @@ import { createImpactAnalyticsRoutes } from './impactAnalytics';
 import { createImpactReportRoutes } from './impactReports';
 import { createImprovementRecommendationRoutes } from './improvementRecommendations';
 import { createInsightsRoutes } from './insights';
+import { createInvitationRoutes } from './invitations';
 import { createMessageRoutes } from './messages';
 import { createNotificationRoutes } from './notifications';
 import { createOnboardingRoutes } from './onboarding';
 import { createPilotRoutes } from './pilot';
+import { createRosterRoutes } from './roster';
 import { createTaskRoutes } from './tasks';
 import { createUserRoutes } from './users';
 
@@ -80,6 +82,8 @@ export const routeRegistry = {
   'impact-reports': ['/impact-reports', '/impact-reports/generate'],
   recommendations: ['/recommendations', '/recommendations/generate', '/recommendations/:id/status'],
   demo: ['/demo'],
+  rosters: ['/rosters', '/rosters/:id/entries', '/rosters/entries/:id', '/rosters/:id/import/preview', '/rosters/:id/import/commit'],
+  invitations: ['/invitations', '/invitations/school-link', '/invitations/claim-code', '/invitations/:id/revoke'],
   admin: ['/admin/users', '/admin/events', '/admin/announcements'],
   modules: [
     ...createAuthRoutes(),
@@ -124,5 +128,7 @@ export const routeRegistry = {
     ...createPilotRoutes(),
     ...createActivityRoutes(),
     ...createAdminRoutes(),
+    ...createRosterRoutes(),
+    ...createInvitationRoutes(),
   ],
 } as const;
