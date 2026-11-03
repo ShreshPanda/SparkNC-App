@@ -129,6 +129,16 @@ const PUBLIC_PATHS = new Set([
   '/demo/seed',
 ]);
 
+// Method-scoped public endpoints: ONLY these exact method+path
+// combinations bypass the session check. Everything else (other methods,
+// reset initiation, roster/invitation management) stays authenticated.
+export const PUBLIC_METHOD_PATHS = new Set([
+  'POST /enroll/resolve',
+  'POST /enroll/verify',
+  'POST /enroll/claim',
+  'POST /access/reset',
+]);
+
 function isSensitiveRequest(method: string, pathname: string): boolean {
   const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'];
   if (mutating.includes(method)) return true;
@@ -262,7 +272,7 @@ export default {
 
     const authContext = await createAuthContext(request.headers, env.DB as any);
 
-    if (!PUBLIC_PATHS.has(url.pathname) && !authContext.isAuthenticated) {
+    if (!PUBLIC_PATHS.has(url.pathname) && !PUBLIC_METHOD_PATHS.has(`${request.method} ${url.pathname}`) && !authContext.isAuthenticated) {
       return complete(
         Response.json(createErrorResponse({ message: 'Unauthorized', code: 'UNAUTHORIZED' }, requestId, timestamp), { status: 401 }),
       );

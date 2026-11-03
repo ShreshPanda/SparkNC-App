@@ -41,6 +41,8 @@ import { createOnboardingRoutes } from './onboarding';
 import { createPilotRoutes } from './pilot';
 import { createRosterRoutes } from './roster';
 import { createTaskRoutes } from './tasks';
+import { createAccessResetRoutes } from './accessReset';
+import { createEnrollmentRoutes } from './enrollment';
 import { createUserRoutes } from './users';
 
 export const routeRegistry = {
@@ -84,6 +86,8 @@ export const routeRegistry = {
   demo: ['/demo'],
   rosters: ['/rosters', '/rosters/:id/entries', '/rosters/entries/:id', '/rosters/:id/import/preview', '/rosters/:id/import/commit'],
   invitations: ['/invitations', '/invitations/school-link', '/invitations/claim-code', '/invitations/:id/revoke'],
+  enrollment: ['/enroll/resolve', '/enroll/verify', '/enroll/claim'],
+  'access-reset': ['/access/reset/initiate', '/access/reset'],
   admin: ['/admin/users', '/admin/events', '/admin/announcements'],
   modules: [
     ...createAuthRoutes(),
@@ -130,5 +134,7 @@ export const routeRegistry = {
     ...createAdminRoutes(),
     ...createRosterRoutes(),
     ...createInvitationRoutes(),
+    ...createEnrollmentRoutes(),
+    ...createAccessResetRoutes(),
   ],
 } as const;

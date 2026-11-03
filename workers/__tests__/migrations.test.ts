@@ -113,3 +113,104 @@ describe('022 + 023 combined', () => {
     expect(perms).toEqual(expect.arrayContaining(['roster.manage', 'invitations.manage', 'students.reset_access', 'messages.send']));
   });
 });
+
+const claimSql = ['023_enrollment.sql', '024_enrollment_claim.sql'];
+
+describe('024_enrollment_claim migration', () => {
+  it('creates all claim-pipeline tables on a fresh database and is idempotent', () => {
+    const db = buildDb([...claimSql, '024_enrollment_claim.sql']);
+    const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
+    for (const t of ['student_public_ids', 'verification_grants', 'enrollments', 'claim_probe', 'reset_consumptions', 'rate_limits']) {
+      expect(tables).toContain(t);
+    }
+  });
+
+  it('applies cleanly to an existing migrated database (022 + 023)', () => {
+    const db = buildDb([...rbacPlusEnrollment, '024_enrollment_claim.sql']);
+    const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map((r) => r.name);
+    for (const t of ['rosters', 'roster_entries', 'invitations', 'access_reset_requests', 'enrollments', 'verification_grants']) {
+      expect(tables).toContain(t);
+    }
+  });
+
+  it('does not add a public_id column to users and assigns no IDs to legacy accounts', () => {
+    const db = buildDb(claimSql);
+    const userCols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name);
+    expect(userCols).not.toContain('public_id');
+    expect(userCols).toContain('email');
+    expect((db.prepare('SELECT COUNT(*) c FROM student_public_ids').get() as { c: number }).c).toBe(0);
+  });
+
+  it('enforces uniqueness on public IDs, grant token hashes, and enrollment claim keys', () => {
+    const db = buildDb(claimSql);
+    db.exec(`
+      INSERT INTO rosters VALUES ('r1','school-1','R','u-lead','t','t');
+      INSERT INTO roster_entries (id,roster_id,school_id,display_name,created_at,updated_at) VALUES ('e1','r1','school-1','Ava','t','t');
+      INSERT INTO invitations (id,roster_entry_id,school_id,kind,token_hash,created_by,expires_at,created_at) VALUES ('i1','e1','school-1','individual','ih1','u-lead','2999','t');
+      INSERT INTO student_public_ids VALUES ('stu_abc','u-stu','t');
+      INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g1','gh1','i1','e1','school-1','2999','t');
+      INSERT INTO enrollments VALUES ('e1','u-stu','i1','g1','t');
+    `);
+    expect(() => db.exec("INSERT INTO student_public_ids VALUES ('stu_abc','u-lead','t')")).toThrow(/UNIQUE/i);
+    expect(() => db.exec("INSERT INTO student_public_ids VALUES ('stu_def','u-stu','t')")).toThrow(/UNIQUE/i);
+    expect(() => db.exec("INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g2','gh1','i1','e1','school-1','2999','t')")).toThrow(/UNIQUE/i);
+    // one enrollment per roster entry and per grant
+    expect(() => db.exec("INSERT INTO enrollments VALUES ('e1','u-lead','i1','g2','t')")).toThrow(/UNIQUE|FOREIGN KEY/i);
+    expect(() => db.exec("INSERT INTO enrollments VALUES ('e2','u-lead','i1','g1','t')")).toThrow(/UNIQUE|FOREIGN KEY/i);
+    // one consumption marker per reset token
+    db.exec("INSERT INTO reset_consumptions VALUES ('rh1','n1','t')");
+    expect(() => db.exec("INSERT INTO reset_consumptions VALUES ('rh1','n2','t')")).toThrow(/UNIQUE/i);
+  });
+
+  it('enforces foreign keys on grants, enrollments, and public ids', () => {
+    const db = buildDb(claimSql);
+    db.exec(`
+      INSERT INTO rosters VALUES ('r1','school-1','R','u-lead','t','t');
+      INSERT INTO roster_entries (id,roster_id,school_id,display_name,created_at,updated_at) VALUES ('e1','r1','school-1','Ava','t','t');
+      INSERT INTO invitations (id,roster_entry_id,school_id,kind,token_hash,created_by,expires_at,created_at) VALUES ('i1','e1','school-1','individual','ih1','u-lead','2999','t');
+    `);
+    expect(() => db.exec("INSERT INTO student_public_ids VALUES ('stu_x','no-user','t')")).toThrow(/FOREIGN KEY/i);
+    expect(() => db.exec("INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g1','gh1','no-invite','e1','school-1','2999','t')")).toThrow(/FOREIGN KEY/i);
+    expect(() => db.exec("INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g1','gh1','i1','no-entry','school-1','2999','t')")).toThrow(/FOREIGN KEY/i);
+    db.exec("INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g1','gh1','i1','e1','school-1','2999','t')");
+    expect(() => db.exec("INSERT INTO enrollments VALUES ('e1','no-user','i1','g1','t')")).toThrow(/FOREIGN KEY/i);
+  });
+
+  it('references schools(id) from verification_grants.school_id and rejects invalid schools', () => {
+    const db = buildDb(claimSql);
+    const fks = db.prepare('PRAGMA foreign_key_list(verification_grants)').all() as { table: string; from: string; to: string }[];
+    expect(fks).toEqual(expect.arrayContaining([expect.objectContaining({ table: 'schools', from: 'school_id', to: 'id' })]));
+    db.exec(`
+      INSERT INTO rosters VALUES ('r1','school-1','R','u-lead','t','t');
+      INSERT INTO roster_entries (id,roster_id,school_id,display_name,created_at,updated_at) VALUES ('e1','r1','school-1','Ava','t','t');
+      INSERT INTO invitations (id,roster_entry_id,school_id,kind,token_hash,created_by,expires_at,created_at) VALUES ('i1','e1','school-1','individual','ih1','u-lead','2999','t');
+    `);
+    expect(() =>
+      db.exec("INSERT INTO verification_grants (id,token_hash,invitation_id,roster_entry_id,school_id,expires_at,created_at) VALUES ('g1','gh1','i1','e1','school-9','2999','t')"),
+    ).toThrow(/FOREIGN KEY/i);
+  });
+
+  it('claim_probe aborts on missing prerequisite and stays empty on success', () => {
+    const db = buildDb(claimSql);
+    // prerequisite missing -> NULL insert -> NOT NULL violation
+    expect(() =>
+      db.exec("INSERT INTO claim_probe (v) SELECT NULL WHERE NOT EXISTS (SELECT 1 FROM roster_entries WHERE id = 'nope')"),
+    ).toThrow(/NOT NULL/i);
+    // prerequisite satisfied -> 0 rows -> no error, table stays empty
+    db.exec("INSERT INTO rosters VALUES ('r1','school-1','R','u-lead','t','t')");
+    db.exec("INSERT INTO roster_entries (id,roster_id,school_id,display_name,created_at,updated_at) VALUES ('e1','r1','school-1','Ava','t','t')");
+    db.exec("INSERT INTO claim_probe (v) SELECT NULL WHERE NOT EXISTS (SELECT 1 FROM roster_entries WHERE id = 'e1')");
+    expect((db.prepare('SELECT COUNT(*) c FROM claim_probe').get() as { c: number }).c).toBe(0);
+  });
+
+  it('rate_limits upsert increments atomically and returns the count', () => {
+    const db = buildDb(claimSql);
+    const upsert = db.prepare(
+      'INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, 1) ON CONFLICT(key, window_start) DO UPDATE SET count = count + 1 RETURNING count',
+    );
+    expect((upsert.get('verify:ip:1.2.3.4', 0) as { count: number }).count).toBe(1);
+    expect((upsert.get('verify:ip:1.2.3.4', 0) as { count: number }).count).toBe(2);
+    // a different window starts a fresh counter
+    expect((upsert.get('verify:ip:1.2.3.4', 1) as { count: number }).count).toBe(1);
+  });
+});

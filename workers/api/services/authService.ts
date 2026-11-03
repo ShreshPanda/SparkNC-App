@@ -4,6 +4,9 @@ import { SessionsRepository } from '../repositories/SessionsRepository';
 declare const crypto: Crypto; // Cloudflare Workers global
 
 import { assertLength, assertNonEmpty, assertValidEmail } from '../validators/baseValidator';
+import { normalizeAccessPhrase, STUDENT_EMAIL_DOMAIN } from './enrollmentService';
+
+const PUBLIC_ID_PATTERN = /^stu_[A-Za-z0-9]{16}$/;
 
 const SESSION_COOKIE_NAME = 'sparknc_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -220,13 +223,55 @@ export class AuthService {
     return { userId: session.userId, sessionId: session.id, expiresAt, role: String(row.role ?? 'student') };
   }
 
+  // Student login: public_id + access phrase. The phrase is normalized
+  // exactly as at claim time before verification against the existing
+  // PBKDF2 hash format. All failures raise the same generic error.
+  async loginStudent(publicId: string, accessPhrase: string): Promise<{ userId: string; sessionId: string; expiresAt: string; role: string; publicId: string }> {
+    assertNonEmpty(publicId, 'Credentials are required');
+    assertNonEmpty(accessPhrase, 'Credentials are required');
+    if (!PUBLIC_ID_PATTERN.test(publicId)) {
+      throw new Error('Invalid credentials');
+    }
+    const normalized = normalizeAccessPhrase(accessPhrase);
+
+    const current = await this.db
+      .prepare(
+        `SELECT u.id, u.role, u.password_hash, u.password_salt, u.is_active, p.public_id
+           FROM student_public_ids p
+           JOIN users u ON u.id = p.user_id
+          WHERE p.public_id = ? AND u.role = 'student' LIMIT 1`,
+      )
+      .bind(publicId)
+      .all();
+
+    const row = current.results?.[0];
+    if (!row || !Number(row.is_active)) {
+      throw new Error('Invalid credentials');
+    }
+
+    const parsed = parsePasswordHash(String(row.password_hash ?? ''));
+    if (!parsed) {
+      throw new Error('Invalid credentials');
+    }
+    const actualBits = await deriveKey(normalized, String(row.password_salt ?? ''), parsed.iterations);
+    if (!timingSafeEqual(new Uint8Array(actualBits), parsed.hashBytes)) {
+      throw new Error('Invalid credentials');
+    }
+
+    const sessionsRepo = new SessionsRepository(this.db);
+    const expiresAt = createSessionExpiresAt();
+    const session = await sessionsRepo.createSession({ userId: String(row.id ?? ''), expiresAt });
+
+    return { userId: session.userId, sessionId: session.id, expiresAt, role: 'student', publicId };
+  }
+
   async logout(sessionId: string | undefined): Promise<void> {
     if (!sessionId) return;
     const sessionsRepo = new SessionsRepository(this.db);
     await sessionsRepo.revokeSession(sessionId);
   }
 
-  async validateSession(sessionId: string | undefined): Promise<{ userId: string; id: string; role: string; email: string; name: string; schoolId?: string; avatarUrl?: string; isActive: boolean; lastSeenAt?: string; createdAt: string; updatedAt: string } | null> {
+  async validateSession(sessionId: string | undefined): Promise<{ userId: string; id: string; role: string; email?: string; name: string; schoolId?: string; avatarUrl?: string; isActive: boolean; lastSeenAt?: string; createdAt: string; updatedAt: string; publicId?: string } | null> {
     if (!sessionId) return null;
 
     const sessionsRepo = new SessionsRepository(this.db);
@@ -239,18 +284,41 @@ export class AuthService {
     const exp = new Date(session.expiresAt).getTime();
     if (Number.isNaN(exp) || exp < now) return null;
 
-    const user = await this.db
-      .prepare('SELECT id, email, name, role, school_id, avatar_url, is_active, last_seen_at, created_at, updated_at FROM users WHERE id = ? LIMIT 1')
-      .bind(session.userId)
-      .all();
-
-    const row = user.results?.[0];
+    // LEFT JOIN picks up the student's public id when migration 024 is
+    // applied; on pre-migration databases the join fails and we fall back
+    // to the plain users query so existing sessions keep working.
+    let row: Record<string, unknown> | undefined;
+    try {
+      const user = await this.db
+        .prepare(
+          'SELECT u.id, u.email, u.name, u.role, u.school_id, u.avatar_url, u.is_active, u.last_seen_at, u.created_at, u.updated_at, p.public_id AS public_id FROM users u LEFT JOIN student_public_ids p ON p.user_id = u.id WHERE u.id = ? LIMIT 1',
+        )
+        .bind(session.userId)
+        .all();
+      row = user.results?.[0];
+    } catch {
+      row = undefined;
+    }
+    if (!row) {
+      // Fallback for databases without student_public_ids (pre-024) and
+      // for missing users — the plain query preserves legacy behavior.
+      const user = await this.db
+        .prepare('SELECT id, email, name, role, school_id, avatar_url, is_active, last_seen_at, created_at, updated_at FROM users WHERE id = ? LIMIT 1')
+        .bind(session.userId)
+        .all();
+      row = user.results?.[0];
+    }
     if (!row) return null;
+
+    // Synthetic student emails are internal identifiers and are never
+    // exposed through session/user serialization.
+    const email = String(row.email ?? '');
+    const isSynthetic = email.endsWith(`@${STUDENT_EMAIL_DOMAIN}`);
 
     return {
       userId: String(row.id ?? ''),
       id: String(row.id ?? ''),
-      email: String(row.email ?? ''),
+      email: isSynthetic ? undefined : email,
       name: String(row.name ?? ''),
       role: String(row.role ?? 'student'),
       schoolId: row.school_id == null ? undefined : String(row.school_id),
@@ -259,6 +327,7 @@ export class AuthService {
       lastSeenAt: row.last_seen_at == null ? undefined : String(row.last_seen_at),
       createdAt: String(row.created_at ?? ''),
       updatedAt: String(row.updated_at ?? ''),
+      publicId: row.public_id == null ? undefined : String(row.public_id),
     };
   }
 }
