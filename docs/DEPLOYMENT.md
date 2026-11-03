@@ -36,12 +36,22 @@ npx wrangler d1 create sparknc-staging        # returns database_name + database
 
 **Wrangler fields that need real values** in `wrangler.jsonc` → `env.staging`:
 
-| Field | Replace | With |
+| Field | Current value | Action |
 |---|---|---|
-| `d1_databases[0].database_name` | `<YOUR_STAGING_D1_DATABASE_NAME>` | output of `d1 create` |
-| `d1_databases[0].database_id` | `<YOUR_STAGING_D1_DATABASE_ID>` | output of `d1 create` |
-| `vars.ALLOWED_ORIGINS` | `https://<YOUR_STAGING_WEB_ORIGIN>` | real staging app origin(s) |
-| `vars.COOKIE_SAMESITE` | `Strict` | keep `Strict` if app+API share a site; `None` if the web app is cross-site |
+| `d1_databases[0].database_name` | `<YOUR_STAGING_D1_DATABASE_NAME>` | output of `d1 create` — required |
+| `d1_databases[0].database_id` | `<YOUR_STAGING_D1_DATABASE_ID>` | output of `d1 create` — required |
+| `vars.ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:19006` | decided: local Expo web ports; add a real hosted origin later if one is provisioned |
+| `vars.COOKIE_SAMESITE` | `None` | decided: `workers.dev` is a public-suffix-list host so every browser origin is cross-site |
+
+Architecture: staging API is `sparknc-api-staging` on `workers.dev`
+(`https://sparknc-api-staging.<account-subdomain>.workers.dev`, subdomain
+`shreshpanda` per committed `eas.json` — verify against the account).
+Native EAS clients use the `staging` build profile and send the `Cookie`
+header directly — they need no CORS origin. Only browser testing via
+`expo start --web` needs `ALLOWED_ORIGINS` entries (the localhost ports).
+Note: `wrangler d1 list` shows the production DB with **0 tables** — the
+first `migrations apply` is a clean bootstrap, not a legacy upgrade, so
+no baseline is needed.
 
 Secrets (per environment, never committed):
 

@@ -101,14 +101,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_reset_one_active_per_user
   ON access_reset_requests(user_id)
   WHERE used_at IS NULL AND revoked_at IS NULL;
 
--- lab_leader: enrollment management permissions (additive merge —
--- preserves all existing/custom strings, idempotent on re-run).
-UPDATE roles SET permissions = (
-  SELECT json_group_array(value) FROM (
-    SELECT value FROM json_each(permissions)
-    UNION
-    SELECT 'roster.manage'
-    UNION SELECT 'invitations.manage'
-    UNION SELECT 'students.reset_access'
-  )
-) WHERE name = 'lab_leader';
+-- lab_leader: enrollment management permissions (additive, guarded
+-- json_insert — preserves all existing/custom strings, idempotent on
+-- re-run, no compound SELECTs which exceed D1's term limit).
+UPDATE roles SET permissions = json_insert(permissions, '$[#]', 'roster.manage') WHERE name = 'lab_leader'
+  AND NOT EXISTS (SELECT 1 FROM json_each(permissions) WHERE value = 'roster.manage');
+UPDATE roles SET permissions = json_insert(permissions, '$[#]', 'invitations.manage') WHERE name = 'lab_leader'
+  AND NOT EXISTS (SELECT 1 FROM json_each(permissions) WHERE value = 'invitations.manage');
+UPDATE roles SET permissions = json_insert(permissions, '$[#]', 'students.reset_access') WHERE name = 'lab_leader'
+  AND NOT EXISTS (SELECT 1 FROM json_each(permissions) WHERE value = 'students.reset_access');

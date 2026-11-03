@@ -43,15 +43,15 @@
 			"name": "sparknc-api-staging",
 			"vars": {
 				"ENVIRONMENT": "staging",
-				"COOKIE_SAMESITE": "Strict",
+				"COOKIE_SAMESITE": "None",
 				"COOKIE_SECURE": "true",
-				"ALLOWED_ORIGINS": "https://<YOUR_STAGING_WEB_ORIGIN>"
+				"ALLOWED_ORIGINS": "http://localhost:8081,http://localhost:19006"
 			},
 			"d1_databases": [
 				{
 					"binding": "DB",
-					"database_name": "<YOUR_STAGING_D1_DATABASE_NAME>",
-					"database_id": "<YOUR_STAGING_D1_DATABASE_ID>",
+					"database_name": "sparknc-staging",
+					"database_id": "d5f2cccc-9ea6-494d-acbd-f2bae09d4d1b",
 					"migrations_dir": "workers/database/migrations"
 				}
 			]
