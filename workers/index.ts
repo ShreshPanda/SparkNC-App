@@ -1,6 +1,5 @@
 import { healthController, statusController, versionController } from './api/controllers/health';
 import { createApiRouter, matchRoute } from './api/services/router';
-import { createBetterAuthService } from './auth/betterAuth';
 import { createAuthContext } from './api/middleware/auth';
 import { createLogger } from './api/services/logger';
 import { AuditLogService } from './api/services/auditLogService';
@@ -19,8 +18,6 @@ interface WorkerExecutionContext {
 const rateLimitMiddleware = new RateLimitMiddleware();
 
 export interface Env {
-  BETTER_AUTH_SECRET?: string;
-  BETTER_AUTH_URL?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_API_TOKEN?: string;
   R2_BUCKET_NAME?: string;
@@ -51,12 +48,6 @@ function validateEnv(env: Env): string[] {
     errors.push('Missing or too short SESSION_SECRET. Set it as a Worker secret with at least 32 characters.');
   }
   if (environment === 'production') {
-    if (!env.BETTER_AUTH_SECRET || String(env.BETTER_AUTH_SECRET).length < 32) {
-      errors.push('Missing or too short BETTER_AUTH_SECRET. Set it as a Worker secret with at least 32 characters.');
-    }
-    if (!env.BETTER_AUTH_URL || !/^https:\/\//.test(env.BETTER_AUTH_URL)) {
-      errors.push('Missing or invalid BETTER_AUTH_URL. Set it to the production HTTPS Worker URL.');
-    }
     if (env.COOKIE_SECURE !== 'true') {
       errors.push('COOKIE_SECURE must be true in production.');
     }
@@ -199,7 +190,10 @@ export default {
     const startedAt = Date.now();
     const url = new URL(request.url);
     const router = createApiRouter();
-    const auth = createBetterAuthService(env);
+    // Real auth readiness: the custom session system needs a valid
+    // SESSION_SECRET and the D1 binding — Better Auth was removed.
+    const authConfigured =
+      Boolean(env.SESSION_SECRET && String(env.SESSION_SECRET).length >= 32) && typeof env.DB?.prepare === 'function';
     const observability = env.DB ? new ObservabilityService(new MetricsRepository(env.DB)) : undefined;
     const complete = (response: Response, userId?: string): Response => {
       const headers = new Headers(response.headers);
@@ -232,7 +226,7 @@ export default {
 
     if (url.pathname === '/health') {
       const health = await healthController(env.DB, envErrors);
-      return complete(Response.json(createSuccessResponse({ ...health, routes: router.routes.length, authConfigured: auth.isConfigured }, requestId, timestamp)));
+      return complete(Response.json(createSuccessResponse({ ...health, routes: router.routes.length, authConfigured }, requestId, timestamp)));
     }
 
     if (url.pathname === '/version') {
@@ -240,7 +234,7 @@ export default {
     }
 
     if (url.pathname === '/status') {
-      const status = await statusController(env.DB, envErrors, env, auth.isConfigured, router.routes.length);
+      const status = await statusController(env.DB, envErrors, env, authConfigured, router.routes.length);
       return complete(Response.json(createSuccessResponse(status, requestId, timestamp)));
     }
 

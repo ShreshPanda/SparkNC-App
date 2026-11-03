@@ -1,168 +1,138 @@
-# Deployment Guide
+# SparkNC Staging Deployment & Migration Runbook
 
-This guide is the deployment overview. Use `CLOUDFLARE_SETUP.md` as the canonical sequential first-deployment procedure and `PRODUCTION_VERIFICATION.md` as the post-deployment gate.
+Canonical migration path: **`wrangler d1 migrations apply`** (Wrangler's
+native system, authoritative `d1_migrations` ledger). The custom runner
+`scripts/apply-d1-migrations.mjs` is for preflight checks, legacy baselines,
+and divergence detection — it writes to the **same** ledger, so the two
+paths never disagree. No deploy command applies migrations automatically.
 
-## Prerequisites
+## Required secrets & variables
 
-- Node.js LTS and npm installed.
-- A Cloudflare account with Workers and D1 enabled.
-- The repository-local Wrangler CLI is available through `npx wrangler`.
-- The Expo CLI (`npx expo`) available for the mobile/web frontend.
+| Item | Where | Notes |
+|---|---|---|
+| `SESSION_SECRET` | `wrangler secret put` | ≥32 chars; Worker fails boot without it |
+| `DB` (D1 binding) | `wrangler.jsonc` | production + `env.staging` must each bind a **different** database_id |
+| `COOKIE_SECURE` | var | `true` in production/staging |
+| `COOKIE_SAMESITE` | var | `Strict` same-site, `None`+Secure if web app is cross-site |
+| `ALLOWED_ORIGINS` | var | comma-separated HTTPS web origins; no placeholders |
+| `ENVIRONMENT` | var | `development` local, `staging`, `production` |
 
-## 1. Cloudflare login
+~~`BETTER_AUTH_SECRET` / `BETTER_AUTH_URL`~~ — removed in S3c-11; Better
+Auth integration was abandoned.
 
-```bash
-npx wrangler login
-```
+## Staging setup package
 
-This opens a browser to authenticate the CLI with your Cloudflare account.
+**Local tooling required:** Node.js 20+ and `npm ci` (wrangler ships via
+devDependencies — no global install needed). Authenticate with
+`npx wrangler login`, or export `CLOUDFLARE_ACCOUNT_ID` +
+`CLOUDFLARE_API_TOKEN` for CI.
 
-## 2. Create and bind the D1 database
-
-Create a D1 database:
-
-```bash
-npx wrangler d1 create <new-sparknc-database-name>
-```
-
-Note the `database_id` returned. Open `wrangler.jsonc` and replace the placeholders in `d1_databases`:
-
-```jsonc
-"d1_databases": [
-  {
-    "binding": "DB",
-    "database_name": "<YOUR_D1_DATABASE_NAME>",
-    "database_id": "<YOUR_D1_DATABASE_ID>"
-  }
-]
-```
-
-## 3. Run migrations
-
-Apply the ordered migrations in `workers/database/migrations`:
+**Cloudflare resources to create manually** (nothing here is scripted —
+create in the dashboard or via wrangler):
 
 ```bash
-node scripts/apply-d1-migrations.mjs <database-name> local
+npx wrangler d1 create sparknc-staging        # returns database_name + database_id
 ```
 
-For production:
+**Wrangler fields that need real values** in `wrangler.jsonc` → `env.staging`:
+
+| Field | Replace | With |
+|---|---|---|
+| `d1_databases[0].database_name` | `<YOUR_STAGING_D1_DATABASE_NAME>` | output of `d1 create` |
+| `d1_databases[0].database_id` | `<YOUR_STAGING_D1_DATABASE_ID>` | output of `d1 create` |
+| `vars.ALLOWED_ORIGINS` | `https://<YOUR_STAGING_WEB_ORIGIN>` | real staging app origin(s) |
+| `vars.COOKIE_SAMESITE` | `Strict` | keep `Strict` if app+API share a site; `None` if the web app is cross-site |
+
+Secrets (per environment, never committed):
 
 ```bash
-node scripts/apply-d1-migrations.mjs <database-name> remote
+npx wrangler secret put SESSION_SECRET --env staging   # ≥32 chars, e.g. openssl rand -hex 32
 ```
 
-Migrations are named with contiguous numeric prefixes and the validated chain is `001_initial.sql` through `020_spark_moments.sql`.
+`scripts/deploy-worker.mjs staging …` **fails closed** if the staging
+`database_id` is missing, still a placeholder, or equals the production
+ID — it cannot deploy staging onto the production D1.
 
-## 4. Configure secrets and environment variables
-
-### Backend secrets
-
-Set the required secrets in the Cloudflare dashboard or with Wrangler:
+## Preflight (read-only)
 
 ```bash
-npx wrangler secret put SESSION_SECRET
-npx wrangler secret put BETTER_AUTH_SECRET
+npm run verify                                     # typecheck + tests + wrangler types
+node scripts/check-deployment-readiness.mjs        # files, migration ordering, staging block, env validation
+wrangler whoami                                    # account access
+wrangler d1 list                                   # confirm staging DB exists and ID matches wrangler.jsonc
 ```
 
-For local development, copy `.dev.vars.example` to `.dev.vars` and fill in the values.
-
-### Frontend environment
-
-Copy `.env.example` to `.env` and set:
+## Inspect migration history (no writes)
 
 ```bash
-EXPO_PUBLIC_CLOUDFLARE_WORKER_URL=https://sparknc-api.<your_subdomain>.workers.dev
+wrangler d1 migrations list <staging-db-name> --remote
+wrangler d1 execute <staging-db-name> --remote \
+  --command "SELECT name FROM d1_migrations ORDER BY id"
 ```
 
-For local development, use:
+## Backup
 
 ```bash
-EXPO_PUBLIC_CLOUDFLARE_WORKER_URL=http://localhost:8787
+wrangler d1 export <staging-db-name> --remote --output=backup-$(date +%F).sql
 ```
 
-## 5. Local Worker development
-
-Start the Worker locally with D1 bindings:
+## Apply migrations
 
 ```bash
-npx wrangler dev --local
+# Canonical path (staging example)
+wrangler d1 migrations apply <staging-db-name> --remote
+
+# With preflight + legacy-baseline support instead:
+node scripts/apply-d1-migrations.mjs <staging-db-name> remote
 ```
 
-The local Worker is available at `http://localhost:8787` by default.
+Each migration file runs in one D1 transaction with its ledger row.
+`wrangler d1 migrations apply` skips anything already in `d1_migrations`.
 
-## 6. Verify the health endpoint
+### Legacy database (schema exists, `d1_migrations` empty)
+
+1. Inspect the schema: `wrangler d1 execute <db> --remote --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"`.
+2. For every migration whose objects are verifiably present, attest it explicitly:
+   `node scripts/apply-d1-migrations.mjs <db> remote --baseline 001_initial.sql 002_sessions.sql …`
+3. Apply the remainder: `node scripts/apply-d1-migrations.mjs <db> remote` or `wrangler d1 migrations apply <db> --remote`.
+4. Never baseline blind — the runner refuses unknown-file and already-recorded names.
+
+## Post-migration verification
 
 ```bash
-node scripts/check-worker-health.mjs http://localhost:8787
+wrangler d1 execute <staging-db> --remote --command "SELECT name FROM d1_migrations ORDER BY id"   # all files present
+wrangler deploy --env staging --dry-run
 ```
 
-Expected response:
+## Rollback
 
-```json
-{
-  "success": true,
-  "data": {
-    "status": "ok",
-    "database": "connected",
-    "version": "1.0.0-rc2",
-    "timestamp": "..."
-  },
-  "timestamp": "...",
-  "requestId": "..."
-}
-```
+1. Restore: `wrangler d1 import` is not supported — restore via re-creating schema from the export (`wrangler d1 execute --file backup.sql`) on a fresh database, or use Cloudflare Time Travel/point-in-time if enabled.
+2. Redeploy previous Worker: `node scripts/deploy-worker.mjs staging deploy` after `git checkout <prev>`.
 
-## 7. Deploy the Worker
-
-Validate the production Worker configuration first:
+## Staging secrets & verification
 
 ```bash
-npm run deploy:dry-run
+wrangler secret put SESSION_SECRET --env staging
+wrangler secret list --env staging
+wrangler deploy --env staging --dry-run
 ```
 
-Apply remote migrations using the real D1 database name, then deploy:
+## Smoke test sequence (staging, requires real Worker)
 
-```bash
-node scripts/apply-d1-migrations.mjs <production-database-name> remote
-npm run deploy:worker
-```
+1. `GET /health` → `ok`, `authConfigured: true`; `GET /status` → `ok`.
+2. Staff login (email+password) → dashboard API calls succeed.
+3. Roster → invitation → `resolve` → `verify` → `claim` → student login (public ID + phrase) → `/auth/me` → logout.
+4. Reset: staff `initiate` → student completes with token → old session rejected → new-phrase login works.
+5. Suspend a test account → its session 401s → reactivate → old session still dead → fresh login works.
+6. `POST /auth/register` → `403 INVITE_REQUIRED`; `GET /enroll/verify` → 404.
+7. Wrong claim code ×5 → invalid-code errors then `429` with `Retry-After`.
+8. Audit: `SELECT action, entity_type FROM audit_logs` shows initiate/claim/complete rows with no token material.
 
-Wrangler prints the deployed Worker URL and version ID. Record both, then run the health-check script against the printed URL.
+## Limited pilot gate
 
-## 8. Deploy the Expo web frontend
-
-Build the web bundle:
-
-```bash
-npx expo export --platform web
-```
-
-Host the generated `dist` directory on any static host, such as Cloudflare Pages:
-
-```bash
-npx wrangler pages deploy dist --project-name sparknc-web
-```
-
-Alternatively, distribute via the Expo app stores for iOS and Android.
-
-## 9. Production verification
-
-1. Register a test account with `POST /auth/register`.
-2. Login with `POST /auth/login` and confirm a `Set-Cookie` header.
-3. Call `GET /auth/me` with the cookie and confirm user details, XP, and streak.
-4. Create, complete, and delete a task via `POST /tasks` and `POST /tasks/:id/complete`.
-
-## 10. Rollback process
-
-1. Record the incident and identify the last known-good Worker version with `npx wrangler versions list`.
-2. Roll back the Worker only with `npm run rollback:worker` or `node scripts/rollback-worker.mjs production <version-id>`.
-3. D1 migrations are forward-only. Apply a compensating migration when schema remediation is necessary.
-4. Run `node scripts/check-worker-health.mjs https://<worker-domain>` after rollback.
-
-## Required Cloudflare dashboard configuration
-
-- D1 database created and bound with `DB` binding.
-- Worker deployed with `compatibility_date` set in `wrangler.jsonc`.
-- `SESSION_SECRET` secret set.
-- `BETTER_AUTH_SECRET` secret set if Better Auth compatibility is enabled later.
-- (Optional) KV namespace or R2 bucket bound if caching or asset storage is added.
+Authorize a one-school pilot only when: all smoke tests pass on staging
+with real `cf-connecting-ip` and cookies; `ALLOWED_ORIGINS` and
+`COOKIE_SAMESITE` match the deployed app origin; no public registration
+path exists; `d1_migrations` shows all migrations 001–024 exactly once;
+a backup was taken within 24h; invitations are lab-leader-issued
+individual invites only.

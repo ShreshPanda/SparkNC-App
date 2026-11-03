@@ -21,13 +21,12 @@
 		"enabled": true,
 		"head_sampling_rate": 1
 	},
-	// Non-secret environment variables. Secrets (SESSION_SECRET, BETTER_AUTH_SECRET)
+	// Non-secret environment variables. Secrets (SESSION_SECRET)
 	// must be configured with `wrangler secret put` or in the Cloudflare dashboard.
 	"vars": {
 		"ENVIRONMENT": "production",
 		"COOKIE_SAMESITE": "Strict",
 		"COOKIE_SECURE": "true",
-		"BETTER_AUTH_URL": "https://sparknc-api.shreshpanda.workers.dev",
 		"ALLOWED_ORIGINS": "http://localhost:19006,http://localhost:8081,http://localhost:3000"
 	},
 	// D1 database binding. The `binding` name is referenced in code as `env.DB`.
@@ -46,7 +45,6 @@
 				"ENVIRONMENT": "staging",
 				"COOKIE_SAMESITE": "Strict",
 				"COOKIE_SECURE": "true",
-				"BETTER_AUTH_URL": "https://<YOUR_STAGING_WORKER_DOMAIN>",
 				"ALLOWED_ORIGINS": "https://<YOUR_STAGING_WEB_ORIGIN>"
 			},
 			"d1_databases": [

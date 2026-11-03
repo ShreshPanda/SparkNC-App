@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// Ledger-aware D1 migration runner.
+// D1 migration runner against Wrangler's own `d1_migrations` ledger —
+// `wrangler d1 migrations list/apply` and this script share one history.
 //
-// Records every successfully applied migration in the `_migrations` table
-// inside the same transaction as the migration itself. A database that has
-// schema objects but an empty ledger is treated as a legacy DB and the
-// runner stops — establish an operator-verified baseline first:
+// Atomicity: each migration file is executed via `wrangler d1 execute
+// --file`, which D1 runs in a single transaction. The ledger INSERT is
+// appended to the file, so a failed migration leaves no ledger row.
+// BEGIN/COMMIT are never emitted — D1 rejects them inside SQL files.
 //
+// Legacy DB (schema exists, empty ledger): the runner refuses and asks
+// for an operator-attested baseline instead of guessing:
 //   node scripts/apply-d1-migrations.mjs <db> remote --baseline 001_initial.sql 002_sessions.sql ...
-//   node scripts/apply-d1-migrations.mjs <db> remote            # applies the rest, ledgered
-//
-// Never baseline blind: confirm the schema actually matches each listed
-// migration before recording it. The ledger proves execution, not intent.
+//   node scripts/apply-d1-migrations.mjs <db> remote            # applies the remainder
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -46,7 +46,7 @@ function d1File(sqlPath) {
 try {
   const files = readdirSync(MIGRATIONS_DIR).filter((f) => /^\d+.*\.sql$/.test(f)).sort();
   d1(MIGRATIONS_DDL);
-  const appliedRows = d1(`SELECT name FROM ${MIGRATIONS_TABLE}`, true);
+  const appliedRows = d1(`SELECT name FROM "${MIGRATIONS_TABLE}" ORDER BY id`, true);
   const applied = (appliedRows?.[0]?.results ?? []).map((r) => r.name);
   const userTables = d1(
     `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '${MIGRATIONS_TABLE}'`,
