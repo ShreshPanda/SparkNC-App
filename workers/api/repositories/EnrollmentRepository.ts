@@ -1,5 +1,20 @@
 import { BaseRepository } from './baseRepository';
 
+export class EnrollmentFailure extends Error {
+  constructor(readonly code: 'CAP_EXCEEDED' | 'RETRY_LATER') {
+    super(code === 'CAP_EXCEEDED' ? 'Too many active verification grants. Try again later.' : 'Temporarily unavailable. Try again shortly.');
+  }
+}
+
+export function isTransientD1Error(error: unknown): boolean {
+  for (let depth = 0; error && typeof error === 'object' && depth < 6; depth += 1) {
+    const detail = error as { message?: unknown; code?: unknown; cause?: unknown };
+    if (/\bSQLITE_(?:BUSY|LOCKED)(?:_\w+)?\b|database (?:is |table is )?(?:locked|busy)|D1 (?:DB|database) is overloaded|write conflict/i.test(`${detail.code ?? ''} ${detail.message ?? ''}`)) return true;
+    error = detail.cause;
+  }
+  return false;
+}
+
 type BoundStatement = {
   run: () => Promise<unknown>;
   all: () => Promise<{ results: Record<string, unknown>[] }>;
@@ -183,7 +198,21 @@ export class EnrollmentRepository extends BaseRepository {
       this.db
         .prepare('INSERT INTO claim_probe (v) SELECT NULL WHERE NOT EXISTS (SELECT 1 FROM verification_grants WHERE id = ?)')
         .bind(input.grantId),
-    ]);
+    ]).catch(async (error: unknown) => {
+      if (isTransientD1Error(error)) throw new EnrollmentFailure('RETRY_LATER');
+      if (error instanceof Error && /NOT NULL constraint failed: claim_probe\.v/i.test(error.message)) {
+        const capped = await this.db.prepare(
+          `SELECT 1 FROM invitations i JOIN roster_entries e ON e.claim_code_hash = ?
+            AND e.school_id = i.school_id AND e.status = 'pending' AND e.claimed_user_id IS NULL
+           WHERE i.id = ? AND i.claimed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > ?
+             AND (i.kind = 'school_link' OR i.roster_entry_id = e.id)
+             AND (SELECT COUNT(*) FROM verification_grants g WHERE g.invitation_id = i.id
+               AND g.used_at IS NULL AND g.expires_at > ?) >= 20`,
+        ).bind(input.claimCodeHash, input.invitationId, input.now, input.now).all();
+        if (capped.results?.[0]) throw new EnrollmentFailure('CAP_EXCEEDED');
+      }
+      throw error;
+    });
   }
 
   // Atomic claim — one batch, exact ordering per frozen design:

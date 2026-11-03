@@ -143,6 +143,7 @@ export class AuthService {
           all: () => Promise<{ results: Record<string, unknown>[] }>;
         };
       };
+      batch?: (statements: { run: () => Promise<unknown> }[]) => Promise<unknown>;
     },
   ) {}
 
@@ -192,6 +193,7 @@ export class AuthService {
     assertNonEmpty(email, 'Email is required');
     assertValidEmail(email);
     assertNonEmpty(password, 'Password is required');
+    if (email.toLowerCase().endsWith(`@${STUDENT_EMAIL_DOMAIN}`)) throw new Error('Invalid credentials');
 
     const current = await this.db
       .prepare('SELECT id, email, name, role, password_hash, password_salt FROM users WHERE email = ? LIMIT 1')
@@ -271,6 +273,42 @@ export class AuthService {
     await sessionsRepo.revokeSession(sessionId);
   }
 
+  // Account suspension boundary. These are administrative primitives:
+  // the caller must be an admin and the batch must be atomic — without
+  // batch() there is no write path at all (fail closed before either
+  // write). No route currently exposes them; a future controller must
+  // keep this service-level check and pass an audit instance.
+  private assertAdmin(caller: { userId: string; role?: string } | undefined): void {
+    if (!caller?.userId || caller.role !== 'admin') {
+      throw new Error('Forbidden: administrator role required');
+    }
+  }
+
+  // Suspension flips is_active and revokes every live session in one
+  // atomic batch, so the account can never be left suspended-but-still-
+  // authenticating. Reactivation does not touch sessions — previously
+  // revoked ones stay dead and a fresh login is required.
+  async suspendUser(userId: string, caller: { userId: string; role?: string }, audit?: { log: (actor: string | undefined, action: string, entityType: string, entityId: string | undefined, metadata?: Record<string, unknown>) => Promise<unknown> }): Promise<void> {
+    this.assertAdmin(caller);
+    assertNonEmpty(userId, 'User id is required');
+    if (typeof this.db.batch !== 'function') {
+      throw new Error('Atomic batch support is required for account suspension');
+    }
+    const now = new Date().toISOString();
+    await this.db.batch([
+      this.db.prepare('UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?').bind(now, userId),
+      this.db.prepare('UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL').bind(now, userId),
+    ]);
+    await audit?.log(caller.userId, 'account.suspend', 'user', userId, {});
+  }
+
+  async reactivateUser(userId: string, caller: { userId: string; role?: string }, audit?: { log: (actor: string | undefined, action: string, entityType: string, entityId: string | undefined, metadata?: Record<string, unknown>) => Promise<unknown> }): Promise<void> {
+    this.assertAdmin(caller);
+    assertNonEmpty(userId, 'User id is required');
+    await this.db.prepare('UPDATE users SET is_active = 1, updated_at = ? WHERE id = ?').bind(new Date().toISOString(), userId).run();
+    await audit?.log(caller.userId, 'account.reactivate', 'user', userId, {});
+  }
+
   async validateSession(sessionId: string | undefined): Promise<{ userId: string; id: string; role: string; email?: string; name: string; schoolId?: string; avatarUrl?: string; isActive: boolean; lastSeenAt?: string; createdAt: string; updatedAt: string; publicId?: string } | null> {
     if (!sessionId) return null;
 
@@ -308,7 +346,7 @@ export class AuthService {
         .all();
       row = user.results?.[0];
     }
-    if (!row) return null;
+    if (!row || Number(row.is_active) !== 1) return null;
 
     // Synthetic student emails are internal identifiers and are never
     // exposed through session/user serialization.
@@ -332,16 +370,21 @@ export class AuthService {
   }
 }
 
-export function buildSessionCookie(sessionId: string, expiresAt: string, requestSecure: boolean): string {
+// SameSite is configurable via COOKIE_SAMESITE: 'Strict' when app and API
+// share a site, 'None' (requires Secure) when the web app is cross-site.
+// Native clients send the cookie via the Cookie header and are unaffected.
+type SameSite = 'Strict' | 'Lax' | 'None';
+
+export function buildSessionCookie(sessionId: string, expiresAt: string, requestSecure: boolean, sameSite: SameSite = 'Strict'): string {
   const maxAge = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-  const attributes = ['Path=/', 'HttpOnly', 'SameSite=Strict', `Max-Age=${maxAge}`];
-  if (requestSecure) attributes.push('Secure');
+  const attributes = ['Path=/', 'HttpOnly', `SameSite=${sameSite}`, `Max-Age=${maxAge}`];
+  if (requestSecure || sameSite === 'None') attributes.push('Secure');
   return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; ${attributes.join('; ')}`;
 }
 
-export function buildClearedSessionCookie(requestSecure = true): string {
-  const attributes = ['Path=/', 'HttpOnly', 'SameSite=Strict', 'Max-Age=0'];
-  if (requestSecure) attributes.push('Secure');
+export function buildClearedSessionCookie(requestSecure = true, sameSite: SameSite = 'Strict'): string {
+  const attributes = ['Path=/', 'HttpOnly', `SameSite=${sameSite}`, 'Max-Age=0'];
+  if (requestSecure || sameSite === 'None') attributes.push('Secure');
   return `${SESSION_COOKIE_NAME}=; ${attributes.join('; ')}`;
 }
 

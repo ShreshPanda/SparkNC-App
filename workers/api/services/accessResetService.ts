@@ -39,6 +39,8 @@ export class AccessResetService {
       userId: target.id,
       schoolId: target.schoolId ?? '',
       requestedBy: caller.userId,
+      callerRole: caller.role ?? '',
+      callerSchoolId: caller.schoolId ?? '',
       tokenHash: await sha256Hex(resetToken),
       expiresAt,
       auditId: `audit-${crypto.randomUUID()}`,

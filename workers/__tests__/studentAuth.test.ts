@@ -177,5 +177,88 @@ describe('session & identity serialization (S3c-3)', () => {
     const user = await auth.validateSession(login.sessionId);
     expect(user?.email).toBe('a@b.co');
     expect(user?.publicId).toBeUndefined();
+    sqlite.exec("UPDATE users SET is_active=0 WHERE id='u1'");
+    expect(await auth.validateSession(login.sessionId)).toBeNull();
+  });
+});
+
+describe('session invalidation on suspension (S3c-5.2)', () => {
+  const adminCaller = { userId: 'u-admin', role: 'admin' };
+  const leadCaller = { userId: 'u-lead', role: 'lab_leader' };
+  let t: ReturnType<typeof build>;
+  beforeEach(() => {
+    t = build();
+  });
+
+  it('student: suspension revokes the live session; reactivation requires a fresh login', async () => {
+    const login = await t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE);
+    expect(await t.auth.validateSession(login.sessionId)).not.toBeNull();
+
+    const audited: { action: string; entityId?: string }[] = [];
+    const audit = { log: async (_a: unknown, action: string, _t: string, entityId?: string) => { audited.push({ action, entityId }); } };
+    await t.auth.suspendUser('u-stu', adminCaller, audit);
+    expect(await t.auth.validateSession(login.sessionId)).toBeNull();
+    const dead = t.sqlite.prepare('SELECT revoked_at FROM sessions WHERE id = ?').get(login.sessionId) as { revoked_at: unknown };
+    expect(dead.revoked_at).not.toBeNull();
+    // suspended accounts cannot log in
+    await expect(t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE)).rejects.toThrow('Invalid credentials');
+
+    await t.auth.reactivateUser('u-stu', adminCaller, audit);
+    // previously revoked session is not restored
+    expect(await t.auth.validateSession(login.sessionId)).toBeNull();
+    expect(audited).toEqual([
+      { action: 'account.suspend', entityId: 'u-stu' },
+      { action: 'account.reactivate', entityId: 'u-stu' },
+    ]);
+
+    const fresh = await t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE);
+    expect(fresh.sessionId).not.toBe(login.sessionId);
+    expect(await t.auth.validateSession(fresh.sessionId)).not.toBeNull();
+  });
+
+  it('staff: identical suspend/reactivate semantics via email login', async () => {
+    const login = await t.auth.login('lead@x.co', STAFF_PASSWORD);
+    expect(await t.auth.validateSession(login.sessionId)).not.toBeNull();
+
+    await t.auth.suspendUser('u-lead', adminCaller);
+    expect(await t.auth.validateSession(login.sessionId)).toBeNull();
+
+    await t.auth.reactivateUser('u-lead', adminCaller);
+    expect(await t.auth.validateSession(login.sessionId)).toBeNull();
+
+    const fresh = await t.auth.login('lead@x.co', STAFF_PASSWORD);
+    expect(await t.auth.validateSession(fresh.sessionId)).not.toBeNull();
+  });
+
+  it('deactivation and session revocation are atomic: a revocation failure leaves the account active', async () => {
+    const login = await t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE);
+    t.sqlite.exec("CREATE TRIGGER fail_session_revoke BEFORE UPDATE ON sessions BEGIN SELECT RAISE(ABORT,'forced'); END");
+    await expect(t.auth.suspendUser('u-stu', adminCaller)).rejects.toThrow();
+    t.sqlite.exec('DROP TRIGGER fail_session_revoke');
+    const user = t.sqlite.prepare("SELECT is_active FROM users WHERE id='u-stu'").get() as { is_active: number };
+    expect(user.is_active).toBe(1);
+    expect(await t.auth.validateSession(login.sessionId)).not.toBeNull();
+  });
+
+  it('non-admin callers are rejected before any write', async () => {
+    const login = await t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE);
+    for (const caller of [leadCaller, { userId: 'u-stu', role: 'student' }, undefined as never]) {
+      await expect(t.auth.suspendUser('u-stu', caller)).rejects.toThrow('Forbidden');
+      await expect(t.auth.reactivateUser('u-stu', caller)).rejects.toThrow('Forbidden');
+    }
+    const user = t.sqlite.prepare("SELECT is_active FROM users WHERE id='u-stu'").get() as { is_active: number };
+    expect(user.is_active).toBe(1);
+    expect(await t.auth.validateSession(login.sessionId)).not.toBeNull();
+    expect(t.sqlite.prepare('SELECT COUNT(*) c FROM sessions WHERE revoked_at IS NOT NULL').get()).toMatchObject({ c: 0 });
+  });
+
+  it('missing batch support fails closed with zero writes', async () => {
+    const login = await t.auth.loginStudent(PUBLIC_ID, STUDENT_PHRASE);
+    const noBatch = { prepare: (t.db as { prepare: unknown }).prepare };
+    const auth = new AuthService(noBatch as never);
+    await expect(auth.suspendUser('u-stu', adminCaller)).rejects.toThrow('Atomic batch support is required');
+    const user = t.sqlite.prepare("SELECT is_active FROM users WHERE id='u-stu'").get() as { is_active: number };
+    expect(user.is_active).toBe(1);
+    expect(await t.auth.validateSession(login.sessionId)).not.toBeNull();
   });
 });

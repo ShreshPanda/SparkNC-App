@@ -4,6 +4,12 @@ import { StreakService } from '../services/streakService';
 import { assertNonEmpty } from '../validators/baseValidator';
 import { clientIp, D1RateLimiter, rateLimitedResponse } from '../services/rateLimitService';
 
+type SameSite = 'Strict' | 'Lax' | 'None';
+function sameSiteOf(env: Record<string, unknown> | undefined): SameSite {
+  const value = String(env?.COOKIE_SAMESITE ?? 'Strict');
+  return value === 'None' || value === 'Lax' ? value : 'Strict';
+}
+
 export interface RegisterInput {
   email: string;
   password: string;
@@ -47,13 +53,17 @@ export async function loginController(input: LoginInput, context?: { env?: unkno
         { scope: 'auth:login:ip', subject: clientIp(context?.headers), max: 20, windowMs: 600_000 },
       ]);
       if (!decision.allowed) return rateLimitedResponse(decision.retryAfterMs);
+    } catch {
+      return rateLimitedResponse(60_000);
+    }
+    try {
       assertNonEmpty(input.publicId, 'Credentials are required');
       assertNonEmpty(input.accessPhrase, 'Credentials are required');
       const result = await service.loginStudent(input.publicId!, input.accessPhrase!);
       return {
         ok: true,
         data: { userId: result.userId, role: result.role, publicId: result.publicId },
-        setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure),
+        setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure, sameSiteOf(env)),
       };
     } catch {
       return invalid();
@@ -70,7 +80,7 @@ export async function loginController(input: LoginInput, context?: { env?: unkno
         userId: result.userId,
         role: result.role,
       },
-      setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure),
+      setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure, sameSiteOf(env)),
     };
   } catch {
     return invalid();
@@ -92,7 +102,7 @@ export async function logoutController(_input: unknown, context?: { env?: unknow
   return {
     ok: true,
     data: { message: 'Logged out' },
-    setCookie: buildClearedSessionCookie(env?.COOKIE_SECURE === 'true'),
+    setCookie: buildClearedSessionCookie(env?.COOKIE_SECURE === 'true', sameSiteOf(env)),
   };
 }
 

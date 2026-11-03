@@ -18,26 +18,41 @@ export default function LoginScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { setSession } = useAuth();
+  const [mode, setMode] = useState<'staff' | 'student'>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [publicId, setPublicId] = useState('');
+  const [phrase, setPhrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const demoMode = isDemoMode();
 
   async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required');
+    const ready = mode === 'staff' ? email.trim() && password.trim() : publicId.trim() && phrase.trim();
+    if (!ready) {
+      setError(mode === 'staff' ? 'Email and password are required' : 'Student ID and access phrase are required');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const session = await authService.login(email.trim(), password.trim());
+      const session =
+        mode === 'staff'
+          ? await authService.login(email.trim(), password.trim())
+          : await authService.loginStudent(publicId.trim(), phrase);
       setSession(session);
       router.replace('/(tabs)/dashboard');
     } catch (err) {
       const code = (err as { code?: string }).code;
-      setError(code === 'INVALID_CREDENTIALS' ? 'Invalid email or password' : err instanceof Error ? err.message : 'Login failed');
+      setError(
+        code === 'INVALID_CREDENTIALS'
+          ? mode === 'staff'
+            ? 'Invalid email or password'
+            : 'Invalid student ID or access phrase'
+          : err instanceof Error
+            ? err.message
+            : 'Login failed',
+      );
     } finally {
       setLoading(false);
     }
@@ -71,27 +86,74 @@ export default function LoginScreen() {
         <FadeIn delay={120}>
           <GlassCard style={styles.card}>
             <Text style={[styles.heading, { color: colors.foreground }]}>Sign in</Text>
+            <View style={styles.toggle}>
+              {(['student', 'staff'] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === m }}
+                  onPress={() => { setMode(m); setError(null); }}
+                  style={[styles.toggleOption, mode === m && { backgroundColor: colors.primary }]}
+                >
+                  <Text style={[styles.toggleText, { color: mode === m ? '#fff' : colors.muted }]}>
+                    {m === 'student' ? 'Student' : 'Staff'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
-            <SparkInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
+            {mode === 'staff' ? (
+              <>
+                <SparkInput
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+                <SparkInput
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </>
+            ) : (
+              <>
+                <SparkInput
+                  placeholder="Student ID (stu_...)"
+                  value={publicId}
+                  onChangeText={setPublicId}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <SparkInput
+                  placeholder="Access phrase"
+                  value={phrase}
+                  onChangeText={setPhrase}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Link href="/(auth)/access-reset" asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel="Reset your access">
+                    <Text style={[styles.link, { color: colors.primary }]}>Forgot your access phrase?</Text>
+                  </Pressable>
+                </Link>
+              </>
+            )}
+            <SparkButton
+              title="Continue"
+              onPress={handleLogin}
+              loading={loading}
+              disabled={mode === 'staff' ? !email.trim() || !password.trim() : !publicId.trim() || !phrase.trim()}
             />
-            <SparkInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <SparkButton title="Continue" onPress={handleLogin} loading={loading} disabled={!email.trim() || !password.trim()} />
             {demoMode ? (
               <SparkButton title="Enter demo" onPress={handleDemo} disabled={loading} />
             ) : null}
-            <Link href="/(auth)/signup" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Create an account">
-                <Text style={[styles.link, { color: colors.primary }]}>Create an account</Text>
+            <Link href="/(auth)/enroll" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Enroll with invitation">
+                <Text style={[styles.link, { color: colors.primary }]}>Have an invitation? Enroll</Text>
               </Pressable>
             </Link>
           </GlassCard>
@@ -114,4 +176,7 @@ const styles = StyleSheet.create({
   button: { paddingVertical: spacing.md, borderRadius: 999, alignItems: 'center' },
   buttonText: { color: colors.white, fontWeight: '700' },
   link: { textAlign: 'center', ...typography.body },
+  toggle: { flexDirection: 'row', borderRadius: 999, borderWidth: 1, borderColor: '#00000022', overflow: 'hidden', alignSelf: 'center' },
+  toggleOption: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
+  toggleText: { ...typography.body, fontWeight: '600' },
 });

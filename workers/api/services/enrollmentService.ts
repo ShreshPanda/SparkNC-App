@@ -1,4 +1,4 @@
-import { EnrollmentRepository } from '../repositories/EnrollmentRepository';
+import { EnrollmentRepository, EnrollmentFailure, isTransientD1Error } from '../repositories/EnrollmentRepository';
 
 declare const crypto: Crypto; // Cloudflare Workers global
 
@@ -169,7 +169,9 @@ export class EnrollmentService {
         expiresAt,
         now,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof EnrollmentFailure) throw error;
+      if (isTransientD1Error(error)) throw new EnrollmentFailure('RETRY_LATER');
       // Batch aborted: invalid code/state or cap reached — uniform error.
       throw new Error('Invalid code');
     }
@@ -214,7 +216,8 @@ export class EnrollmentService {
         auditMetadata: JSON.stringify({ schoolId: grant.schoolId }),
         now,
       });
-    } catch {
+    } catch (error) {
+      if (isTransientD1Error(error)) throw new EnrollmentFailure('RETRY_LATER');
       // Any batch failure (replay, claimed entry, expired invitation,
       // collision) rolls back everything — no user, session, or audit.
       throw new Error('Claim could not be completed');

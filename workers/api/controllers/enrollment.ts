@@ -1,5 +1,5 @@
 import { EnrollmentService } from '../services/enrollmentService';
-import { EnrollmentRepository } from '../repositories/EnrollmentRepository';
+import { EnrollmentRepository, EnrollmentFailure, isTransientD1Error } from '../repositories/EnrollmentRepository';
 import { buildSessionCookie } from '../services/authService';
 import { clientIp, D1RateLimiter, rateLimitedResponse } from '../services/rateLimitService';
 import { assertNonEmpty } from '../validators/baseValidator';
@@ -28,6 +28,15 @@ async function guard(db: Db, specs: Parameters<D1RateLimiter['check']>[0]): Prom
   }
 }
 
+function retryResponse(error: unknown): Response | undefined {
+  if (error instanceof EnrollmentFailure && error.code === 'CAP_EXCEEDED') {
+    return Response.json({ error: { code: error.code, message: error.message } }, { status: 429, headers: { 'Retry-After': '60' } });
+  }
+  if ((error instanceof EnrollmentFailure && error.code === 'RETRY_LATER') || isTransientD1Error(error)) {
+    return Response.json({ error: { code: 'RETRY_LATER', message: 'Temporarily unavailable. Try again shortly.' } }, { status: 503, headers: { 'Retry-After': '1' } });
+  }
+}
+
 function badRequest(message: string, code = 'INVALID_REQUEST'): Response {
   return Response.json({ ok: false, error: { code, message } }, { status: 400 });
 }
@@ -40,8 +49,8 @@ export async function resolveInvitationController(input: { token?: string }, con
     assertNonEmpty(input?.token, 'Token is required');
     const resolved = await svc.resolveInvitation(input.token!);
     return { ok: true, data: resolved };
-  } catch {
-    return badRequest('Invalid invitation', 'INVALID_INVITATION');
+  } catch (error) {
+    return retryResponse(error) ?? badRequest('Invalid invitation', 'INVALID_INVITATION');
   }
 }
 
@@ -60,9 +69,9 @@ export async function verifyClaimCodeController(input: { token?: string; claimCo
     assertNonEmpty(input?.claimCode, 'Claim code is required');
     const identity = await svc.verifyClaimCode(input.token!, input.claimCode!);
     return { ok: true, data: identity };
-  } catch {
+  } catch (error) {
     // Identity data is disclosed only on success; failures are uniform.
-    return badRequest('Invalid code', 'INVALID_CODE');
+    return retryResponse(error) ?? badRequest('Invalid code', 'INVALID_CODE');
   }
 }
 
@@ -80,9 +89,11 @@ export async function claimEnrollmentController(input: { grantToken?: string; ac
     return {
       ok: true,
       data: { publicId: result.publicId, displayName: result.displayName, schoolName: result.schoolName },
-      setCookie: buildSessionCookie(result.sessionId, result.sessionExpiresAt, env?.COOKIE_SECURE === 'true'),
+      setCookie: buildSessionCookie(result.sessionId, result.sessionExpiresAt, env?.COOKIE_SECURE === 'true', ['Strict', 'Lax', 'None'].includes(String(env?.COOKIE_SAMESITE)) ? (env?.COOKIE_SAMESITE as 'Strict' | 'Lax' | 'None') : 'Strict'),
     };
   } catch (err) {
+    const retry = retryResponse(err);
+    if (retry) return retry;
     const message = err instanceof Error ? err.message : '';
     if (message.includes('requirements')) {
       return badRequest('Access phrase does not meet requirements', 'PHRASE_POLICY');

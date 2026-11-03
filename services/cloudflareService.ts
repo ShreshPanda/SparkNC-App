@@ -148,7 +148,24 @@ async function withDemo<T>(apiCall: () => Promise<T>, demoValue: T): Promise<T> 
 
 export interface AuthPayload {
   ok: boolean;
-  data: { userId: string; role: string };
+  data: { userId: string; role: string; publicId?: string };
+}
+
+export interface ResolveInvitationPayload {
+  kind: 'individual' | 'school_link';
+  expiresAt: string;
+}
+
+export interface VerifyClaimCodePayload {
+  grantToken: string;
+  displayName: string;
+  schoolName: string;
+}
+
+export interface ClaimEnrollmentPayload {
+  publicId: string;
+  displayName: string;
+  schoolName: string;
 }
 
 export interface MePayload {
@@ -208,6 +225,28 @@ export const cloudflareService = {
 
   async login(input: { email: string; password: string }) {
     return api<AuthPayload>('POST', '/auth/login', input);
+  },
+
+  async loginStudent(input: { publicId: string; accessPhrase: string }) {
+    return api<AuthPayload>('POST', '/auth/login', input);
+  },
+
+  // Enrollment and recovery use the public S3c endpoints. Tokens are never
+  // persisted client-side beyond the single request.
+  async resolveInvitation(token: string) {
+    return api<ResolveInvitationPayload>('POST', '/enroll/resolve', { token });
+  },
+
+  async verifyClaimCode(token: string, claimCode: string) {
+    return api<VerifyClaimCodePayload>('POST', '/enroll/verify', { token, claimCode });
+  },
+
+  async claimEnrollment(grantToken: string, accessPhrase: string) {
+    return api<ClaimEnrollmentPayload>('POST', '/enroll/claim', { grantToken, accessPhrase });
+  },
+
+  async completeAccessReset(resetToken: string, accessPhrase: string) {
+    return api<{ reset: boolean }>('POST', '/access/reset', { resetToken, accessPhrase });
   },
 
   async logout() {

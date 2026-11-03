@@ -111,7 +111,7 @@ async function standardizeControllerResponse(response: Response, requestId: stri
     const status = response.status >= 400 ? response.status : 500;
     const message = error.message ?? 'Unknown error';
     const code = error.code ?? 'ERROR';
-    return Response.json(createErrorResponse({ message: String(message), code: String(code) }, requestId, timestamp), { status });
+    return Response.json(createErrorResponse({ message: String(message), code: String(code) }, requestId, timestamp), { status, headers: response.headers });
   } catch {
     return response;
   }

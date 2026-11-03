@@ -39,6 +39,15 @@ export const authService = {
     return session;
   },
 
+  // Student login: public student ID + access phrase. Same session
+  // lifecycle as staff login — cookie is applied by the API layer.
+  async loginStudent(publicId: string, accessPhrase: string): Promise<AuthSession> {
+    await cloudflareService.loginStudent({ publicId: publicId.trim(), accessPhrase });
+    session = await cloudflareService.getMe();
+    restored = true;
+    return session;
+  },
+
   // Explicit demo entry point. Only available in demo mode; callers must not
   // route real credentials through this path.
   async demoLogin(): Promise<AuthSession> {

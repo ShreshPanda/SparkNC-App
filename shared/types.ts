@@ -5,6 +5,7 @@ export type SparkPermission = string;
 export interface User {
   id: string;
   email: string;
+  publicId?: string;
   name: string;
   role: SparkRole;
   schoolId?: string;

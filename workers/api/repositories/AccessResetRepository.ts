@@ -71,6 +71,8 @@ export class AccessResetRepository extends BaseRepository {
     userId: string;
     schoolId: string;
     requestedBy: string;
+    callerRole: string;
+    callerSchoolId: string;
     tokenHash: string;
     expiresAt: string;
     auditId: string;
@@ -83,9 +85,16 @@ export class AccessResetRepository extends BaseRepository {
         .bind(input.now, input.userId),
       this.db
         .prepare(
-          'INSERT INTO access_reset_requests (id, user_id, school_id, requested_by, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          `INSERT INTO access_reset_requests (id, user_id, school_id, requested_by, token_hash, expires_at, created_at)
+           SELECT ?, u.id, u.school_id, ?, ?, ?, ? FROM users u
+            WHERE u.id = ? AND u.role = 'student' AND u.is_active = 1
+              AND u.school_id = ?
+              AND (? = 'admin' OR (u.school_id = ? AND ? <> ''))`,
         )
-        .bind(input.requestId, input.userId, input.schoolId, input.requestedBy, input.tokenHash, input.expiresAt, input.now),
+        .bind(input.requestId, input.requestedBy, input.tokenHash, input.expiresAt, input.now, input.userId, input.schoolId, input.callerRole, input.callerSchoolId, input.callerSchoolId),
+      this.db
+        .prepare('INSERT INTO claim_probe (v) SELECT NULL WHERE NOT EXISTS (SELECT 1 FROM access_reset_requests WHERE id = ? AND token_hash = ?)')
+        .bind(input.requestId, input.tokenHash),
       this.db
         .prepare("INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id, metadata, created_at) VALUES (?, ?, 'access.reset.initiate', 'user', ?, ?, ?)")
         .bind(input.auditId, input.requestedBy, input.userId, JSON.stringify({ schoolId: input.schoolId }), input.now),
