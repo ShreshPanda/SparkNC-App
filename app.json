@@ -35,6 +35,13 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0248cb34-5335-4c71-9141-637657658655"
+      }
+    },
+    "owner": "shreshidh"
   }
 }
