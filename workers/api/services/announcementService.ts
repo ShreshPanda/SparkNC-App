@@ -29,6 +29,29 @@ export interface EnrichedAnnouncement {
   isRead: boolean;
 }
 
+export interface CallerScope {
+  role?: string;
+  schoolId?: string;
+}
+
+// Scoped staff may only publish within their own school; 'global' scope is
+// admin-only. A caller-supplied schoolId is never trusted for non-admin
+// callers.
+function enforceCreateScope(caller: CallerScope | undefined, scope: string, inputSchoolId?: string): string | undefined {
+  if (!caller || caller.role === 'admin') return inputSchoolId;
+  if (!caller.schoolId || scope === 'global') {
+    throw new Error('Forbidden: school scope required');
+  }
+  return caller.schoolId;
+}
+
+function enforceRecordScope(caller: CallerScope | undefined, recordSchoolId?: string): void {
+  if (!caller || caller.role === 'admin') return;
+  if (!caller.schoolId || recordSchoolId !== caller.schoolId) {
+    throw new Error('Forbidden: outside school scope');
+  }
+}
+
 export class AnnouncementService {
   constructor(
     private readonly repository: AnnouncementRepository,
@@ -50,10 +73,13 @@ export class AnnouncementService {
     return this.enrichAnnouncement(announcement, userId);
   }
 
-  async createAnnouncement(input: unknown, createdBy: string): Promise<EnrichedAnnouncement> {
+  async createAnnouncement(input: unknown, createdBy: string, caller?: CallerScope): Promise<EnrichedAnnouncement> {
     assertNonEmpty(createdBy, 'User id is required');
     const parsed = createAnnouncementSchema.parse(input);
-    const announcement = await this.repository.createAnnouncement(parsed, createdBy);
+    const announcement = await this.repository.createAnnouncement(
+      { ...parsed, schoolId: enforceCreateScope(caller, parsed.scope, parsed.schoolId) },
+      createdBy,
+    );
 
     if (this.notificationService) {
       await this.notificationService.createNotification({
@@ -69,16 +95,26 @@ export class AnnouncementService {
     return this.enrichAnnouncement(announcement, createdBy, true);
   }
 
-  async updateAnnouncement(announcementId: string, input: unknown, _updatedBy: string): Promise<EnrichedAnnouncement | null> {
+  async updateAnnouncement(announcementId: string, input: unknown, _updatedBy: string, caller?: CallerScope): Promise<EnrichedAnnouncement | null> {
     assertNonEmpty(announcementId, 'Announcement id is required');
+    const existing = await this.repository.getAnnouncement(announcementId);
+    if (!existing) return null;
+    enforceRecordScope(caller, existing.schoolId);
     const parsed = updateAnnouncementSchema.parse(input);
-    const announcement = await this.repository.updateAnnouncement(announcementId, parsed);
+    const announcement = await this.repository.updateAnnouncement(
+      announcementId,
+      caller && caller.role !== 'admin' ? { ...parsed, schoolId: existing.schoolId, scope: parsed.scope === 'global' ? 'school' : parsed.scope } : parsed,
+    );
     if (!announcement) return null;
     return this.enrichAnnouncement(announcement, _updatedBy);
   }
 
-  async deleteAnnouncement(announcementId: string, _deletedBy: string): Promise<boolean> {
+  async deleteAnnouncement(announcementId: string, _deletedBy: string, caller?: CallerScope): Promise<boolean> {
     assertNonEmpty(announcementId, 'Announcement id is required');
+    const existing = await this.repository.getAnnouncement(announcementId);
+    if (existing) {
+      enforceRecordScope(caller, existing.schoolId);
+    }
     return this.repository.deleteAnnouncement(announcementId);
   }
 

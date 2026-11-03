@@ -126,6 +126,26 @@ export class MessageRepository extends BaseRepository {
     }
   }
 
+  async getUserRole(userId: string): Promise<string | null> {
+    const result = await this.db
+      .prepare('SELECT role FROM users WHERE id = ? LIMIT 1')
+      .bind(userId)
+      .all();
+    const role = result.results?.[0]?.role;
+    return role == null ? null : String(role);
+  }
+
+  // True when at least one message in the conversation was authored by a
+  // non-student — distinguishes staff-initiated/engaged threads from
+  // student-initiated or legacy student-to-student conversations.
+  async hasStaffMessage(conversationId: string): Promise<boolean> {
+    const result = await this.db
+      .prepare('SELECT 1 FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.conversation_id = ? AND u.role != ? LIMIT 1')
+      .bind(conversationId, 'student')
+      .all();
+    return Boolean(result.results?.[0]);
+  }
+
   async listMessages(conversationId: string): Promise<MessageRecord[]> {
     try {
       const result = await this.db

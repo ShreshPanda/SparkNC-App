@@ -36,27 +36,60 @@ export interface EnrichedEvent {
   attendeeCount: number;
 }
 
+export interface CallerScope {
+  role?: string;
+  schoolId?: string;
+}
+
+// Scoped staff (e.g. location_manager, lab_leader) may only operate inside
+// their own school. Admins are unrestricted. A caller-supplied schoolId is
+// never trusted for non-admin callers.
+function enforceCreateScope(caller: CallerScope | undefined, inputSchoolId?: string): string | undefined {
+  if (!caller || caller.role === 'admin') return inputSchoolId;
+  if (!caller.schoolId) {
+    throw new Error('Forbidden: school scope required');
+  }
+  return caller.schoolId;
+}
+
+function enforceRecordScope(caller: CallerScope | undefined, recordSchoolId?: string): void {
+  if (!caller || caller.role === 'admin') return;
+  if (!caller.schoolId || recordSchoolId !== caller.schoolId) {
+    throw new Error('Forbidden: outside school scope');
+  }
+}
+
 export class EventService {
   constructor(
     private readonly repository: EventRepository,
     private readonly notificationService?: NotificationService,
   ) {}
 
-  async listEvents(userId: string): Promise<EnrichedEvent[]> {
-    assertNonEmpty(userId, 'User id is required');
-    const events = await this.repository.listEvents();
-    return this.enrichEvents(events, userId);
+  // Event audience model (schema limit): events carry only a nullable
+  // school_id. NULL means organization-wide; a set school_id restricts
+  // visibility to members of that school. There is no community-tier or
+  // program-tier audience column — see the audit notes.
+  private isVisible(event: { schoolId?: string }, caller?: CallerScope): boolean {
+    if (caller?.role === 'admin') return true;
+    if (!event.schoolId) return true;
+    return Boolean(caller?.schoolId) && caller?.schoolId === event.schoolId;
   }
 
-  async getEvent(eventId: string, userId: string): Promise<EnrichedEvent | null> {
+  async listEvents(userId: string, caller?: CallerScope): Promise<EnrichedEvent[]> {
+    assertNonEmpty(userId, 'User id is required');
+    const events = await this.repository.listEvents();
+    return this.enrichEvents(events.filter((e) => this.isVisible(e, caller)), userId);
+  }
+
+  async getEvent(eventId: string, userId: string, caller?: CallerScope): Promise<EnrichedEvent | null> {
     assertNonEmpty(eventId, 'Event id is required');
     assertNonEmpty(userId, 'User id is required');
     const event = await this.repository.getEvent(eventId);
-    if (!event) return null;
+    if (!event || !this.isVisible(event, caller)) return null;
     return this.enrichEvent(event, userId);
   }
 
-  async createEvent(input: unknown, createdBy: string): Promise<EnrichedEvent> {
+  async createEvent(input: unknown, createdBy: string, caller?: CallerScope): Promise<EnrichedEvent> {
     assertNonEmpty(createdBy, 'User id is required');
     const parsed = createEventSchema.parse(input);
     const payload: CreateEventInput = {
@@ -65,15 +98,18 @@ export class EventService {
       location: parsed.location,
       startsAt: parsed.startsAt,
       endsAt: parsed.endsAt,
-      schoolId: parsed.schoolId,
+      schoolId: enforceCreateScope(caller, parsed.schoolId),
     };
     const event = await this.repository.createEvent(payload, createdBy);
     return this.enrichEvent(event, createdBy);
   }
 
-  async updateEvent(eventId: string, input: unknown, updatedBy: string): Promise<EnrichedEvent | null> {
+  async updateEvent(eventId: string, input: unknown, updatedBy: string, caller?: CallerScope): Promise<EnrichedEvent | null> {
     assertNonEmpty(eventId, 'Event id is required');
     assertNonEmpty(updatedBy, 'User id is required');
+    const existing = await this.repository.getEvent(eventId);
+    if (!existing) return null;
+    enforceRecordScope(caller, existing.schoolId);
     const parsed = updateEventSchema.parse(input);
     const payload: UpdateEventInput = {
       title: parsed.title,
@@ -81,7 +117,7 @@ export class EventService {
       location: parsed.location,
       startsAt: parsed.startsAt,
       endsAt: parsed.endsAt,
-      schoolId: parsed.schoolId,
+      schoolId: caller && caller.role !== 'admin' ? existing.schoolId : parsed.schoolId,
     };
     const event = await this.repository.updateEvent(eventId, payload);
     if (!event) {
@@ -90,17 +126,21 @@ export class EventService {
     return this.enrichEvent(event, updatedBy);
   }
 
-  async deleteEvent(eventId: string, _deletedBy: string): Promise<boolean> {
+  async deleteEvent(eventId: string, _deletedBy: string, caller?: CallerScope): Promise<boolean> {
     assertNonEmpty(eventId, 'Event id is required');
+    const existing = await this.repository.getEvent(eventId);
+    if (existing) {
+      enforceRecordScope(caller, existing.schoolId);
+    }
     return this.repository.deleteEvent(eventId);
   }
 
-  async registerForEvent(eventId: string, userId: string): Promise<EnrichedEvent> {
+  async registerForEvent(eventId: string, userId: string, caller?: CallerScope): Promise<EnrichedEvent> {
     assertNonEmpty(eventId, 'Event id is required');
     assertNonEmpty(userId, 'User id is required');
 
     const event = await this.repository.getEvent(eventId);
-    if (!event) {
+    if (!event || !this.isVisible(event, caller)) {
       throw new Error('Event not found');
     }
 
@@ -120,12 +160,12 @@ export class EventService {
     return this.enrichEvent(event, userId, true);
   }
 
-  async unregisterFromEvent(eventId: string, userId: string): Promise<EnrichedEvent> {
+  async unregisterFromEvent(eventId: string, userId: string, caller?: CallerScope): Promise<EnrichedEvent> {
     assertNonEmpty(eventId, 'Event id is required');
     assertNonEmpty(userId, 'User id is required');
 
     const event = await this.repository.getEvent(eventId);
-    if (!event) {
+    if (!event || !this.isVisible(event, caller)) {
       throw new Error('Event not found');
     }
 
@@ -133,8 +173,12 @@ export class EventService {
     return this.enrichEvent(event, userId, false);
   }
 
-  async listAttendees(eventId: string): Promise<string[]> {
+  async listAttendees(eventId: string, caller?: CallerScope): Promise<string[]> {
     assertNonEmpty(eventId, 'Event id is required');
+    const event = await this.repository.getEvent(eventId);
+    if (!event || !this.isVisible(event, caller)) {
+      return [];
+    }
     return this.repository.listAttendees(eventId);
   }
 

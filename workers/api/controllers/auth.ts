@@ -15,31 +15,13 @@ export interface LoginInput {
   password: string;
 }
 
-export async function registerController(input: RegisterInput, context?: { env?: unknown; userId?: string }) {
-  const env = context?.env as Record<string, unknown> | undefined;
-  const db = env?.DB as { prepare: (query: string) => { bind: (...values: unknown[]) => { run: () => Promise<unknown>; all: () => Promise<{ results: Record<string, unknown>[] }> } } };
-
-  const service = new AuthService(db);
-  assertNonEmpty(input.email, 'Email is required');
-  assertNonEmpty(input.password, 'Password is required');
-  assertNonEmpty(input.name, 'Name is required');
-
-  const isSecure = env?.COOKIE_SECURE === 'true';
-
-  try {
-    const result = await service.register(input);
-
-    return {
-      ok: true,
-      data: {
-        userId: result.userId,
-        role: result.role,
-      },
-      setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure),
-    };
-  } catch (err) {
-    return Response.json({ ok: false, error: { code: 'AUTH_ERROR', message: err instanceof Error ? err.message : 'Failed to register' } }, { status: 400 });
-  }
+export async function registerController(_input: RegisterInput, _context?: { env?: unknown; userId?: string }) {
+  // Registration is invitation-gated per the MVP spec. S3 implements the
+  // invite-token flow; until then no public or admin self-provisioning.
+  return Response.json(
+    { ok: false, error: { code: 'INVITE_REQUIRED', message: 'Registration is currently available by invitation only' } },
+    { status: 403 },
+  );
 }
 
 export async function loginController(input: LoginInput, context?: { env?: unknown; userId?: string; request?: Request }) {

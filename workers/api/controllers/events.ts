@@ -7,6 +7,12 @@ import { assertNonEmpty } from '../validators/baseValidator';
 export interface EventControllerContext {
   env?: unknown;
   userId?: string;
+  role?: string;
+  schoolId?: string;
+}
+
+function callerScope(context?: EventControllerContext) {
+  return { role: context?.role, schoolId: context?.schoolId };
 }
 
 export interface EventInput {
@@ -31,7 +37,7 @@ export async function listEventsController(context?: EventControllerContext) {
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  return service.listEvents(userId);
+  return service.listEvents(userId, callerScope(context));
 }
 
 export async function getEventController(eventId: string, context?: EventControllerContext) {
@@ -41,7 +47,7 @@ export async function getEventController(eventId: string, context?: EventControl
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  const event = await service.getEvent(eventId, userId);
+  const event = await service.getEvent(eventId, userId, callerScope(context));
   if (!event) {
     return Response.json({ error: { code: 'NOT_FOUND', message: 'Event not found' } }, { status: 404 });
   }
@@ -54,7 +60,7 @@ export async function createEventController(input: EventInput, context?: EventCo
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  return service.createEvent(input, userId);
+  return service.createEvent(input, userId, callerScope(context));
 }
 
 export async function updateEventController(eventId: string, input: EventInput, context?: EventControllerContext) {
@@ -64,7 +70,7 @@ export async function updateEventController(eventId: string, input: EventInput, 
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  const event = await service.updateEvent(eventId, input, userId);
+  const event = await service.updateEvent(eventId, input, userId, callerScope(context));
   if (!event) {
     return Response.json({ error: { code: 'NOT_FOUND', message: 'Event not found' } }, { status: 404 });
   }
@@ -78,7 +84,7 @@ export async function deleteEventController(eventId: string, context?: EventCont
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  const deleted = await service.deleteEvent(eventId, userId);
+  const deleted = await service.deleteEvent(eventId, userId, callerScope(context));
   return { deleted, eventId };
 }
 
@@ -89,7 +95,7 @@ export async function registerForEventController(eventId: string, context?: Even
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  return service.registerForEvent(eventId, userId);
+  return service.registerForEvent(eventId, userId, callerScope(context));
 }
 
 export async function unregisterFromEventController(eventId: string, context?: EventControllerContext) {
@@ -99,7 +105,7 @@ export async function unregisterFromEventController(eventId: string, context?: E
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  return service.unregisterFromEvent(eventId, userId);
+  return service.unregisterFromEvent(eventId, userId, callerScope(context));
 }
 
 export async function listEventAttendeesController(eventId: string, context?: EventControllerContext) {
@@ -109,6 +115,6 @@ export async function listEventAttendeesController(eventId: string, context?: Ev
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createEventService(context);
-  const attendees = await service.listAttendees(eventId);
+  const attendees = await service.listAttendees(eventId, callerScope(context));
   return { eventId, attendees };
 }

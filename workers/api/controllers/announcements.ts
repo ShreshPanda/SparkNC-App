@@ -7,7 +7,12 @@ import { assertNonEmpty } from '../validators/baseValidator';
 export interface AnnouncementControllerContext {
   env?: unknown;
   userId?: string;
+  role?: string;
   schoolId?: string;
+}
+
+function callerScope(context?: AnnouncementControllerContext) {
+  return { role: context?.role, schoolId: context?.schoolId };
 }
 
 export interface AnnouncementInput {
@@ -53,7 +58,7 @@ export async function createAnnouncementController(input: AnnouncementInput, con
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createAnnouncementService(context);
-  return service.createAnnouncement(input, userId);
+  return service.createAnnouncement(input, userId, callerScope(context));
 }
 
 export async function updateAnnouncementController(announcementId: string, input: AnnouncementInput, context?: AnnouncementControllerContext) {
@@ -63,7 +68,7 @@ export async function updateAnnouncementController(announcementId: string, input
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createAnnouncementService(context);
-  const announcement = await service.updateAnnouncement(announcementId, input, userId);
+  const announcement = await service.updateAnnouncement(announcementId, input, userId, callerScope(context));
   if (!announcement) {
     return Response.json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } }, { status: 404 });
   }
@@ -77,7 +82,7 @@ export async function deleteAnnouncementController(announcementId: string, conte
     return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
   const service = createAnnouncementService(context);
-  const deleted = await service.deleteAnnouncement(announcementId, userId);
+  const deleted = await service.deleteAnnouncement(announcementId, userId, callerScope(context));
   return { deleted, announcementId };
 }
 

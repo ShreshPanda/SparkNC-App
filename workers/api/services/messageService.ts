@@ -57,9 +57,19 @@ export class MessageService {
       throw new Error('Cannot send message to yourself');
     }
 
+    // Students cannot initiate conversations. A student may send only into
+    // a thread that already contains a staff-authored message; legacy
+    // student-to-student threads therefore stay readable but read-only.
+    const senderRole = await this.repository.getUserRole(senderId);
+
     let conversation = await this.repository.findConversationByParticipants([senderId, parsed.recipientId]);
     if (!conversation) {
+      if (senderRole === 'student') {
+        throw new Error('Students cannot initiate conversations');
+      }
       conversation = await this.repository.createConversation([senderId, parsed.recipientId]);
+    } else if (senderRole === 'student' && !(await this.repository.hasStaffMessage(conversation.id))) {
+      throw new Error('Students cannot initiate conversations');
     }
 
     const message = await this.repository.sendMessage(conversation.id, senderId, parsed.recipientId, parsed.body);

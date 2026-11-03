@@ -117,6 +117,18 @@ async function standardizeControllerResponse(response: Response, requestId: stri
   }
 }
 
+// Routes reachable without a session. Everything else requires an
+// authenticated context before its handler runs. /health, /version and
+// /status return earlier and never reach this check. /auth/logout stays
+// public so the cleared-cookie response is always emitted.
+const PUBLIC_PATHS = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+  '/demo',
+  '/demo/seed',
+]);
+
 function isSensitiveRequest(method: string, pathname: string): boolean {
   const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'];
   if (mutating.includes(method)) return true;
@@ -249,6 +261,12 @@ export default {
     }
 
     const authContext = await createAuthContext(request.headers, env.DB as any);
+
+    if (!PUBLIC_PATHS.has(url.pathname) && !authContext.isAuthenticated) {
+      return complete(
+        Response.json(createErrorResponse({ message: 'Unauthorized', code: 'UNAUTHORIZED' }, requestId, timestamp), { status: 401 }),
+      );
+    }
 
     try {
       const responsePayload = await (match.route.handler as any)(match.params, input, {
