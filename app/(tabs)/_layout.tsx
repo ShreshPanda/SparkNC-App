@@ -1,13 +1,21 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePresentation } from '../../providers/PresentationProvider';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useAuth } from '../../providers/AuthProvider';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { enabled } = usePresentation();
+  const { status } = useAuth();
   const insets = useSafeAreaInsets();
+
+  // Protected group: never render tab screens before auth resolves, and
+  // never render them unauthenticated (including on native deep links).
+  if (status !== 'authenticated') {
+    return status === 'loading' ? null : <Redirect href="/(auth)/login" />;
+  }
 
   return (
     <Tabs

@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppShell } from '../../components/AppShell';
@@ -6,34 +6,19 @@ import { SparkButton } from '../../components/SparkButton';
 import { SparkInput } from '../../components/SparkInput';
 import { SparkOrb } from '../../components/visual/SparkOrb';
 import { useTheme } from '../../providers/ThemeProvider';
-import { authService } from '../../services/authService';
 import { spacing, typography } from '../../theme';
 
+// Registration is invitation-gated per the MVP spec. Self-service signup is
+// held until S3 delivers the invitation flow; the screen stays reachable but
+// cannot create accounts.
 export default function SignupScreen() {
   const { colors } = useTheme();
-  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleRegister() {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setError('Name, email, and password are required');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      await authService.register(email.trim(), password.trim(), name.trim());
-      await authService.login(email.trim(), password.trim());
-      router.replace('/(tabs)/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
+  function handleRegister() {
+    // Intentionally no-op: accounts are provisioned by invitation only.
   }
 
   return (
@@ -47,7 +32,9 @@ export default function SignupScreen() {
 
         <View style={styles.card}>
           <Text style={[styles.heading, { color: colors.foreground }]}>Create your account</Text>
-          {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
+          <Text style={[styles.subtitle, { color: colors.muted }]}>
+            SparkNC accounts are currently provisioned by invitation. Contact your program administrator for access.
+          </Text>
           <SparkInput
             placeholder="Full name"
             value={name}
@@ -66,7 +53,7 @@ export default function SignupScreen() {
             onChangeText={setPassword}
             secureTextEntry
           />
-          <SparkButton title="Get started" onPress={handleRegister} loading={loading} disabled={!name.trim() || !email.trim() || !password.trim()} />
+          <SparkButton title="Get started" onPress={handleRegister} disabled />
           <Link href="/(auth)/login" asChild>
             <Pressable accessibilityRole="link" accessibilityLabel="Sign in to existing account">
               <Text style={[styles.link, { color: colors.primary }]}>Already have an account? Sign in</Text>

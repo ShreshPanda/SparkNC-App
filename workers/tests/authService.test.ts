@@ -20,10 +20,10 @@ describe('AuthService', () => {
   });
 
   it('rejects empty email', async () => {
-    await expect(service.register({ email: '', password: 'password', name: 'Test' })).rejects.toThrow('email');
+    await expect(service.register({ email: '', password: 'password', name: 'Test' })).rejects.toThrow(/email/i);
   });
 
   it('rejects weak password', async () => {
-    await expect(service.register({ email: 'test@example.com', password: '123', name: 'Test' })).rejects.toThrow('password');
+    await expect(service.register({ email: 'test@example.com', password: '123', name: 'Test' })).rejects.toThrow(/password/i);
   });
 });

@@ -35,10 +35,30 @@ import {
   RecognitionSummary,
 } from '../shared/types';
 import * as demo from './demoData';
+import { sessionStorage } from './sessionStorage';
 
 const workerUrl = (process.env.EXPO_PUBLIC_CLOUDFLARE_WORKER_URL ?? '').replace(/\/$/, '');
 
+// Demo mode must be explicitly enabled. Evaluated at call time so tests and
+// different build environments behave predictably.
+export function isDemoMode(): boolean {
+  return process.env.EXPO_PUBLIC_DEMO_MODE === 'true';
+}
+
+let warnedInsecureUrl = false;
+if (workerUrl && !workerUrl.startsWith('https://') && !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(workerUrl)) {
+  warnedInsecureUrl = true;
+  console.warn('EXPO_PUBLIC_CLOUDFLARE_WORKER_URL is not HTTPS; session credentials will not be sent over insecure transport.');
+}
+
 let sessionCookie: string | null = null;
+
+// Load a persisted native session token (SecureStore) into memory.
+// No-op on web, where the browser cookie jar is authoritative.
+export async function restoreSessionCookie(): Promise<void> {
+  const stored = await sessionStorage.get();
+  if (stored) sessionCookie = stored;
+}
 
 export function getSessionCookie(): string | null {
   return sessionCookie;
@@ -52,6 +72,12 @@ export function clearSessionCookie(): void {
   sessionCookie = null;
 }
 
+// Clear both the in-memory cookie and any persisted native credential.
+export async function clearSessionCredentials(): Promise<void> {
+  sessionCookie = null;
+  await sessionStorage.clear();
+}
+
 function applySetCookie(setCookie: string | null) {
   if (!setCookie) return;
   const first = setCookie.split(';')[0].trim();
@@ -61,8 +87,9 @@ function applySetCookie(setCookie: string | null) {
     const value = valueParts.join('=');
     if (value) {
       setSessionCookie(first);
+      void sessionStorage.set(first);
     } else {
-      clearSessionCookie();
+      void clearSessionCredentials();
     }
   }
 }
@@ -70,9 +97,14 @@ function applySetCookie(setCookie: string | null) {
 interface ApiEnvelope<T> {
   success: boolean;
   data: T;
-  error?: { message: string };
+  error?: { message: string; code?: string };
   timestamp: string;
   requestId: string;
+}
+
+export interface ApiError extends Error {
+  code?: string;
+  status?: number;
 }
 
 async function api<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
@@ -93,13 +125,20 @@ async function api<T = unknown>(method: string, path: string, body?: unknown): P
   applySetCookie(setCookie);
   const envelope = (await response.json()) as ApiEnvelope<T>;
   if (!envelope.success) {
-    throw new Error(envelope.error?.message ?? 'Request failed');
+    const err: ApiError = new Error(envelope.error?.message ?? 'Request failed');
+    err.code = envelope.error?.code;
+    err.status = response.status;
+    throw err;
   }
   return envelope.data;
 }
 
-// Demo fallback wrapper: tries the real API, falls back to demo data on any error.
+// Demo fallback wrapper: only active when EXPO_PUBLIC_DEMO_MODE === 'true'.
+// In normal operation API errors propagate so failures are never masked.
 async function withDemo<T>(apiCall: () => Promise<T>, demoValue: T): Promise<T> {
+  if (!isDemoMode()) {
+    return apiCall();
+  }
   try {
     return await apiCall();
   } catch {
@@ -161,23 +200,23 @@ export const cloudflareService = {
     return withDemo(() => api('GET', '/health'), { status: 'ok' });
   },
 
+  // Authentication calls never fall back to demo data — a fabricated
+  // session must never mask a real backend failure.
   async register(input: { email: string; password: string; name: string; role?: string }) {
-    return withDemo(() => api<AuthPayload>('POST', '/auth/register', input), { ok: true, data: { userId: 'demo', role: 'student' } });
+    return api<AuthPayload>('POST', '/auth/register', input);
   },
 
   async login(input: { email: string; password: string }) {
-    return withDemo(() => api<AuthPayload>('POST', '/auth/login', input), { ok: true, data: { userId: 'demo', role: 'student' } });
+    return api<AuthPayload>('POST', '/auth/login', input);
   },
 
   async logout() {
-    return withDemo(() => api<{ ok: boolean; data: { message: string } }>('POST', '/auth/logout'), { ok: true, data: { message: 'Logged out' } });
+    return api<{ ok: boolean; data: { message: string } }>('POST', '/auth/logout');
   },
 
   async getMe(): Promise<UserProfile & { xp: number; streak: { current: number; longest: number } }> {
-    return withDemo(async () => {
-      const result = await api<MePayload>('GET', '/auth/me');
-      return result.data;
-    }, { id: 'demo', email: 'ava.demo@sparknc.org', name: 'Ava Demo', role: 'student', schoolId: 'school-1', isActive: true, createdAt: '', updatedAt: '', xp: 1240, streak: { current: 12, longest: 18 } });
+    const result = await api<MePayload>('GET', '/auth/me');
+    return result.data;
   },
 
   async getUserProfile(_id: string): Promise<UserProfile | null> {

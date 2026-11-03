@@ -9,16 +9,20 @@ import { SparkInput } from '../../components/SparkInput';
 import { SparkOrb } from '../../components/visual/SparkOrb';
 import { useTheme } from '../../providers/ThemeProvider';
 import { authService } from '../../services/authService';
+import { isDemoMode } from '../../services/cloudflareService';
+import { useAuth } from '../../providers/AuthProvider';
 import { colors, spacing, typography } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { setSession } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const demoMode = isDemoMode();
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
@@ -28,10 +32,26 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      await authService.login(email.trim(), password.trim());
+      const session = await authService.login(email.trim(), password.trim());
+      setSession(session);
       router.replace('/(tabs)/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const code = (err as { code?: string }).code;
+      setError(code === 'INVALID_CREDENTIALS' ? 'Invalid email or password' : err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDemo() {
+    setLoading(true);
+    setError(null);
+    try {
+      const session = await authService.demoLogin();
+      setSession(session);
+      router.replace('/(tabs)/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo mode unavailable');
     } finally {
       setLoading(false);
     }
@@ -66,6 +86,9 @@ export default function LoginScreen() {
               secureTextEntry
             />
             <SparkButton title="Continue" onPress={handleLogin} loading={loading} disabled={!email.trim() || !password.trim()} />
+            {demoMode ? (
+              <SparkButton title="Enter demo" onPress={handleDemo} disabled={loading} />
+            ) : null}
             <Link href="/(auth)/signup" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel="Create an account">
                 <Text style={[styles.link, { color: colors.primary }]}>Create an account</Text>
