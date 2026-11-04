@@ -1,4 +1,4 @@
-import { AuthService, buildClearedSessionCookie, buildSessionCookie, getSessionCookieName, parseCookieHeader } from '../services/authService';
+import { AuthService, buildClearedSessionCookie, buildSessionCookie, getSessionCookieName, parseCookieHeader, sessionCredentialValue } from '../services/authService';
 import { XPService } from '../services/xpService';
 import { StreakService } from '../services/streakService';
 import { assertNonEmpty } from '../validators/baseValidator';
@@ -64,6 +64,7 @@ export async function loginController(input: LoginInput, context?: { env?: unkno
         ok: true,
         data: { userId: result.userId, role: result.role, publicId: result.publicId },
         setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure, sameSiteOf(env)),
+        sessionCredential: sessionCredentialValue(result.sessionId),
       };
     } catch {
       return invalid();
@@ -81,6 +82,7 @@ export async function loginController(input: LoginInput, context?: { env?: unkno
         role: result.role,
       },
       setCookie: buildSessionCookie(result.sessionId, result.expiresAt, isSecure, sameSiteOf(env)),
+      sessionCredential: sessionCredentialValue(result.sessionId),
     };
   } catch {
     return invalid();

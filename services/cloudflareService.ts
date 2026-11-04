@@ -130,7 +130,16 @@ async function api<T = unknown>(method: string, path: string, body?: unknown): P
     err.status = response.status;
     throw err;
   }
-  return envelope.data;
+  // Native session transport: RN fetch cannot see Set-Cookie, so session-
+  // establishing responses carry the same name=value credential in the body.
+  // Awaited so the first authenticated request cannot race the store.
+  const data = envelope.data as T & { sessionCredential?: string };
+  if (data && typeof data === 'object' && data.sessionCredential) {
+    setSessionCookie(data.sessionCredential);
+    await sessionStorage.set(data.sessionCredential);
+    delete data.sessionCredential;
+  }
+  return data as T;
 }
 
 // Demo fallback wrapper: only active when EXPO_PUBLIC_DEMO_MODE === 'true'.

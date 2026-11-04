@@ -1,6 +1,6 @@
 import { EnrollmentService } from '../services/enrollmentService';
 import { EnrollmentRepository, EnrollmentFailure, isTransientD1Error } from '../repositories/EnrollmentRepository';
-import { buildSessionCookie } from '../services/authService';
+import { buildSessionCookie, sessionCredentialValue } from '../services/authService';
 import { clientIp, D1RateLimiter, rateLimitedResponse } from '../services/rateLimitService';
 import { assertNonEmpty } from '../validators/baseValidator';
 
@@ -90,6 +90,7 @@ export async function claimEnrollmentController(input: { grantToken?: string; ac
       ok: true,
       data: { publicId: result.publicId, displayName: result.displayName, schoolName: result.schoolName },
       setCookie: buildSessionCookie(result.sessionId, result.sessionExpiresAt, env?.COOKIE_SECURE === 'true', ['Strict', 'Lax', 'None'].includes(String(env?.COOKIE_SAMESITE)) ? (env?.COOKIE_SAMESITE as 'Strict' | 'Lax' | 'None') : 'Strict'),
+      sessionCredential: sessionCredentialValue(result.sessionId),
     };
   } catch (err) {
     const retry = retryResponse(err);

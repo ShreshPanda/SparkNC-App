@@ -221,3 +221,38 @@ describe('student login and access recovery (S3c-6)', () => {
     expect(mapEnrollmentError({ code: 'INVALID_RESET' }, '')).toContain('reset');
   });
 });
+
+describe('native session credential transport (S4.5.5)', () => {
+  beforeEach(() => {
+    secureStore.clear();
+    fetchMock.mockClear();
+    vi.stubEnv('EXPO_PUBLIC_CLOUDFLARE_WORKER_URL', 'https://api.test');
+    vi.stubEnv('EXPO_PUBLIC_DEMO_MODE', 'false');
+    vi.unstubAllGlobals();
+  });
+
+  it('persists body credential and sends it on the first authenticated request', async () => {
+    handler = (path, body) => {
+      if (path === '/auth/login') {
+        return ok({ ok: true, data: { userId: 'u1', role: 'student', publicId: 'testingID' }, sessionCredential: 'sparknc_session=sess-abc123' });
+      }
+      if (path === '/auth/me') return ok({ ok: true, data: { id: 'u1', role: 'student', publicId: 'testingID' } });
+      throw new Error(`unhandled ${path}`);
+    };
+    const { authService } = await importServices();
+    await authService.loginStudent('testingID', 'testing');
+    expect(secureStore.get('sparknc_session')).toBe('sparknc_session=sess-abc123');
+    // Refresh hits /auth/me — the session cookie must already be attached.
+    const me = await authService.refreshSession();
+    expect(me?.role).toBe('student');
+    const meCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/auth/me'));
+    expect((meCall?.[1] as RequestInit | undefined)?.headers).toMatchObject({ Cookie: 'sparknc_session=sess-abc123' });
+  });
+
+  it('response credential does not leak into the caller-visible payload', async () => {
+    handler = () => ok({ ok: true, data: { userId: 'u1', role: 'student', publicId: 'testingID' }, sessionCredential: 'sparknc_session=sess-abc123' });
+    const { authService } = await importServices();
+    const res = await authService.loginStudent('testingID', 'testing');
+    expect(JSON.stringify(res)).not.toContain('sparknc_session');
+  });
+});

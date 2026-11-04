@@ -88,6 +88,8 @@ describe('student login (S3c-3)', () => {
     expect(res.data.role).toBe('student');
     expect(res.data.publicId).toBe(PUBLIC_ID);
     expect(res.setCookie).toContain(getSessionCookieName());
+    // Native transport: body carries the same name=value credential (S4.5.5).
+    expect((res as { sessionCredential?: string }).sessionCredential).toMatch(/^sparknc_session=/);
     expect((t.sqlite.prepare('SELECT COUNT(*) c FROM sessions').get() as { c: number }).c).toBe(1);
     expect(JSON.stringify(res)).not.toContain('students.sparknc.internal');
   });
@@ -95,6 +97,22 @@ describe('student login (S3c-3)', () => {
   it('normalizes phrase whitespace/case-folding like enrollment did', async () => {
     const res = (await loginController({ publicId: PUBLIC_ID, accessPhrase: '  my   secure  phrase ' }, ctx(t.db))) as { ok: boolean };
     expect(res.ok).toBe(true);
+  });
+
+  it('custom provisioned IDs login case-insensitively; malformed IDs still rejected (S4.5)', async () => {
+    t.sqlite.exec(`
+      INSERT INTO users (id, email, name, role, school_id, is_active, password_hash, password_salt, created_at, updated_at)
+        VALUES ('u-qa','u-qa@test.sparknc','QA','student','school-1',1,'${credential(STUDENT_PHRASE, STUDENT_SALT)}','${STUDENT_SALT}','t','t');
+      INSERT INTO student_public_ids (public_id, user_id, created_at) VALUES ('testingID','u-qa','t');
+    `);
+    const mixedCase = (await loginController({ publicId: 'testingID', accessPhrase: STUDENT_PHRASE }, ctx(t.db))) as { ok: boolean; data: Record<string, unknown> };
+    expect(mixedCase.ok).toBe(true);
+    const lowered = (await loginController({ publicId: 'testingid', accessPhrase: STUDENT_PHRASE }, ctx(t.db))) as { ok: boolean };
+    expect(lowered.ok).toBe(true);
+    for (const bad of ['xy', 'x'.repeat(33), 'bad id!', 'stu_bad?']) {
+      const res = (await loginController({ publicId: bad, accessPhrase: STUDENT_PHRASE }, ctx(t.db))) as Response;
+      expect(res.status).toBe(401); // same generic INVALID_CREDENTIALS as wrong-creds
+    }
   });
 
   it('wrong phrase and unknown public id produce indistinguishable errors', async () => {

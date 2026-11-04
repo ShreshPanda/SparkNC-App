@@ -6,7 +6,10 @@ declare const crypto: Crypto; // Cloudflare Workers global
 import { assertLength, assertNonEmpty, assertValidEmail } from '../validators/baseValidator';
 import { normalizeAccessPhrase, STUDENT_EMAIL_DOMAIN } from './enrollmentService';
 
-const PUBLIC_ID_PATTERN = /^stu_[A-Za-z0-9]{16}$/;
+// Generated IDs are stu_ + 16 alphanumeric chars; custom provisioned IDs
+// (e.g. test accounts) may be any 4–32-char [A-Za-z0-9_-] value. Lookups
+// are case-insensitive so stored case variants resolve to one identity.
+const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{4,32}$/;
 
 const SESSION_COOKIE_NAME = 'sparknc_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -231,7 +234,8 @@ export class AuthService {
   async loginStudent(publicId: string, accessPhrase: string): Promise<{ userId: string; sessionId: string; expiresAt: string; role: string; publicId: string }> {
     assertNonEmpty(publicId, 'Credentials are required');
     assertNonEmpty(accessPhrase, 'Credentials are required');
-    if (!PUBLIC_ID_PATTERN.test(publicId)) {
+    const normalizedId = publicId.trim();
+    if (!PUBLIC_ID_PATTERN.test(normalizedId)) {
       throw new Error('Invalid credentials');
     }
     const normalized = normalizeAccessPhrase(accessPhrase);
@@ -241,9 +245,9 @@ export class AuthService {
         `SELECT u.id, u.role, u.password_hash, u.password_salt, u.is_active, p.public_id
            FROM student_public_ids p
            JOIN users u ON u.id = p.user_id
-          WHERE p.public_id = ? AND u.role = 'student' LIMIT 1`,
+          WHERE p.public_id = ? COLLATE NOCASE AND u.role = 'student' LIMIT 1`,
       )
-      .bind(publicId)
+      .bind(normalizedId)
       .all();
 
     const row = current.results?.[0];
@@ -380,6 +384,13 @@ export function buildSessionCookie(sessionId: string, expiresAt: string, request
   const attributes = ['Path=/', 'HttpOnly', `SameSite=${sameSite}`, `Max-Age=${maxAge}`];
   if (requestSecure || sameSite === 'None') attributes.push('Secure');
   return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; ${attributes.join('; ')}`;
+}
+
+// Bearer-equivalent credential returned in response bodies so native
+// clients can persist the session (RN fetch cannot read Set-Cookie).
+// Same name=value the Cookie header carries — no internals exposed.
+export function sessionCredentialValue(sessionId: string): string {
+  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}`;
 }
 
 export function buildClearedSessionCookie(requestSecure = true, sameSite: SameSite = 'Strict'): string {
